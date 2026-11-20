@@ -51,6 +51,8 @@ public:
     bool MemoryWriteExclusive64(u64 vaddr, std::uint64_t value, std::uint64_t expected) override;
     bool MemoryWriteExclusive128(u64 vaddr, Dynarmic::A64::Vector value, Dynarmic::A64::Vector expected) override;
     void InstructionCacheOperationRaised(Dynarmic::A64::InstructionCacheOperation op, u64 value) override;
+    void CompileBegin() override;
+    void CompileEnd() override;
     void ExceptionRaised(u64 pc, Dynarmic::A64::Exception exception) override;
     void CallSVC(u32 svc) override;
     void AddTicks(u64 ticks) override;
@@ -95,6 +97,7 @@ public:
     void SignalInterrupt(Kernel::KThread* thread) override;
     void ClearInstructionCache() override;
     void InvalidateCacheRange(u64 addr, std::size_t size) override;
+    void RequestStallHalt() override;
 
 protected:
     const Kernel::DebugWatchpoint* HaltedWatchpoint() const override;
@@ -110,6 +113,7 @@ private:
     void MakeJit(Common::PageTable* page_table, std::size_t address_space_bits);
     std::optional<DynarmicCallbacks64> m_cb{};
     std::size_t m_core_index{};
+    StallGate* m_gate{};
 
     std::optional<Dynarmic::A64::Jit> m_jit{};
 

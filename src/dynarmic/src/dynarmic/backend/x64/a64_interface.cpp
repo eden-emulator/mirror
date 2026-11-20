@@ -256,10 +256,13 @@ private:
         // JIT Compile
         // LocationDescriptor ctor() does important ops (like tflags) do not skip
         auto const arch_descriptor = A64::LocationDescriptor{descriptor};
+        conf.callbacks->CompileBegin();
         ir_block.Reset(arch_descriptor);
         A64::Translate(ir_block, arch_descriptor, conf);
         Optimization::Optimize(ir_block, conf, polyfill_options);
-        return emitter.Emit(ir_block).entrypoint;
+        const CodePtr entrypoint = emitter.Emit(ir_block).entrypoint;
+        conf.callbacks->CompileEnd();
+        return entrypoint;
     }
 
     void PerformRequestedCacheInvalidation(HaltReason hr) {

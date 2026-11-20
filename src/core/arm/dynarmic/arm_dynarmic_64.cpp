@@ -4,6 +4,10 @@
 // SPDX-FileCopyrightText: Copyright 2018 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#if defined(__x86_64__) || defined(_M_X64)
+#include <immintrin.h>
+#endif
+
 #include "common/settings.h"
 #include "core/arm/dynarmic/arm_dynarmic.h"
 #include "core/arm/dynarmic/arm_dynarmic_64.h"
@@ -350,7 +354,47 @@ void ArmDynarmic64::MakeJit(Common::PageTable* page_table, std::size_t address_s
 
 HaltReason ArmDynarmic64::RunThread(Kernel::KThread* thread) {
     m_jit->ClearExclusiveState();
-    return TranslateHaltReason(m_jit->Run());
+    if (m_gate == nullptr) {
+        return TranslateHaltReason(m_jit->Run());
+    }
+    while (true) {
+        while (m_gate->stalls.load(std::memory_order_acquire) != 0) {
+#if defined(__x86_64__) || defined(_M_X64)
+            _mm_pause();
+#endif
+        }
+        const Dynarmic::HaltReason hr = m_jit->Run();
+        if (hr != StallHalt) {
+            return TranslateHaltReason(hr & ~StallHalt);
+        }
+    }
+}
+
+void DynarmicCallbacks64::CompileBegin() {
+    StallGate* gate = m_parent.m_gate;
+    if (gate == nullptr) {
+        return;
+    }
+    gate->stalls.fetch_add(1, std::memory_order_acq_rel);
+    for (std::size_t core = 0; core < Core::Hardware::NUM_CPU_CORES; ++core) {
+        if (core != m_parent.m_core_index) {
+            if (auto* arm = m_process->GetArmInterface(core)) {
+                arm->RequestStallHalt();
+            }
+        }
+    }
+}
+
+void DynarmicCallbacks64::CompileEnd() {
+    if (StallGate* gate = m_parent.m_gate) {
+        gate->stalls.fetch_sub(1, std::memory_order_acq_rel);
+    }
+}
+
+void ArmDynarmic64::RequestStallHalt() {
+    if (m_gate != nullptr) {
+        m_jit->HaltExecution(StallHalt);
+    }
 }
 
 HaltReason ArmDynarmic64::StepThread(Kernel::KThread* thread) {
@@ -387,6 +431,9 @@ ArmDynarmic64::ArmDynarmic64(System& system, bool uses_wall_clock, Kernel::KProc
     , m_cb(std::make_optional<DynarmicCallbacks64>(*this, process))
     , m_core_index{core_index}
 {
+    if (uses_wall_clock && process->IsApplication()) {
+        m_gate = &process->GetStallGate();
+    }
     auto& page_table = process->GetPageTable().GetBasePageTable();
     auto& page_table_impl = page_table.GetImpl();
     MakeJit(&page_table_impl, page_table.GetAddressSpaceWidth());

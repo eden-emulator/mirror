@@ -7,6 +7,7 @@
 #pragma once
 
 #include <array>
+#include <atomic>
 #include <span>
 #include <string>
 #include <vector>
@@ -48,6 +49,10 @@ enum class Architecture {
 };
 
 /// Generic ARMv8 CPU interface
+struct StallGate {
+    std::atomic<u32> stalls{0};
+};
+
 class ArmInterface : Common::NonCopyable, Common::NonMoveable {
 public:
     explicit ArmInterface(bool uses_wall_clock) : m_uses_wall_clock{uses_wall_clock} {}
@@ -55,6 +60,8 @@ public:
 
     // Perform any backend-specific initialization.
     virtual void Initialize() {}
+
+    virtual void RequestStallHalt() {}
 
     // Runs the CPU until an event happens.
     virtual HaltReason RunThread(Kernel::KThread* thread) = 0;

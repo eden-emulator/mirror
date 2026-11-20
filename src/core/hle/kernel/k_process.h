@@ -71,6 +71,7 @@ private:
 
 private:
     std::array<std::unique_ptr<Core::ArmInterface>, Core::Hardware::NUM_CPU_CORES> m_arm_interfaces{};
+    Core::StallGate m_stall_gate;
     std::array<KThread*, Core::Hardware::NUM_CPU_CORES> m_running_threads{};
     std::array<u64, Core::Hardware::NUM_CPU_CORES> m_running_thread_idle_counts{};
     std::array<u64, Core::Hardware::NUM_CPU_CORES> m_running_thread_switch_counts{};
@@ -498,6 +499,10 @@ public:
         return m_post_handlers;
     }
 #endif
+
+    Core::StallGate& GetStallGate() {
+        return m_stall_gate;
+    }
 
     Core::ArmInterface* GetArmInterface(size_t core_index) const {
         return m_arm_interfaces[core_index].get();
