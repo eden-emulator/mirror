@@ -674,6 +674,50 @@ u32 QuadButterflyMask(const IR::Inst& inst) {
     return index.U32();
 }
 
+// Maxwell can form a coarse fragment derivative by broadcasting lane 0,
+// subtracting the current pixel, then broadcasting lane 1 (X) or 2 (Y).
+void FoldQuadDerivative(IR::Block& block, IR::Inst& inst) {
+    const IR::Value lane{inst.Arg(1).Resolve()};
+    if (!lane.IsImmediate() || (lane.U32() != 1 && lane.U32() != 2)) {
+        return;
+    }
+    const IR::Value value{GetThroughCast(inst.Arg(0).Resolve(), IR::Opcode::BitCastU32F32)};
+    if (value.IsImmediate()) {
+        return;
+    }
+    const auto* add = value.InstRecursive();
+    if (add->GetOpcode() != IR::Opcode::FSwizzleAdd || !add->Arg(2).IsImmediate() ||
+        add->Arg(2).U32() != 0xd7) {
+        return;
+    }
+    const IR::Value first{GetThroughCast(add->Arg(0).Resolve(), IR::Opcode::BitCastF32U32)};
+    if (first.IsImmediate()) {
+        return;
+    }
+    const auto* broadcast = first.InstRecursive();
+    const auto is_imm = [broadcast](size_t arg, u32 expected) {
+        const IR::Value v{broadcast->Arg(arg).Resolve()};
+        return v.IsImmediate() && v.U32() == expected;
+    };
+    if (broadcast->GetOpcode() == IR::Opcode::ShuffleIndex) {
+        if (!is_imm(1, 0) || !is_imm(2, 3) || !is_imm(3, 28)) {
+            return;
+        }
+    } else if (broadcast->GetOpcode() != IR::Opcode::QuadBroadcast || !is_imm(1, 0)) {
+        return;
+    }
+    const IR::Value source{add->Arg(1).Resolve()};
+    const IR::Value other{GetThroughCast(broadcast->Arg(0).Resolve(), IR::Opcode::BitCastU32F32)};
+    if (other != source && broadcast->Arg(0).Resolve() !=
+                               GetThroughCast(source, IR::Opcode::BitCastF32U32)) {
+        return;
+    }
+    IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
+    const IR::F32 negative{ir.FPNeg(IR::F32{source})};
+    const auto derivative = lane.U32() == 1 ? ir.DPdxCoarse(negative) : ir.DPdyCoarse(negative);
+    inst.ReplaceUsesWith(ir.BitCast<IR::U32>(derivative));
+}
+
 void FoldFSwizzleAdd(IR::Block& block, IR::Inst& inst) {
     const IR::Value swizzle{inst.Arg(2)};
     if (!swizzle.IsImmediate()) {
@@ -1102,6 +1146,8 @@ void ConstantPropagation(Environment& env, IR::Block& block, IR::Inst& inst) {
     case IR::Opcode::CompositeExtractF16x4:
         return FoldCompositeExtract(inst, IR::Opcode::CompositeConstructF16x4,
                                     IR::Opcode::CompositeInsertF16x4);
+    case IR::Opcode::QuadBroadcast:
+        return FoldQuadDerivative(block, inst);
     case IR::Opcode::FSwizzleAdd:
         return FoldFSwizzleAdd(block, inst);
     case IR::Opcode::GetCbufF32:
