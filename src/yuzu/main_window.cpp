@@ -8076,7 +8076,7 @@ bool MainWindow::OnShutdownBegin() {
         return false;
     }
 
-    if (ui->action_Fullscreen->isChecked()) {
+    if (ui->action_Fullscreen->isChecked() && !closing) {
         HideFullscreen();
     }
 
