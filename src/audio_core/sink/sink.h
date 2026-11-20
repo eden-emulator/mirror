@@ -42,6 +42,8 @@ public:
      */
     virtual void CloseStreams() = 0;
 
+    virtual void SetSystemPaused(bool is_paused) = 0;
+
     /**
      * Create a new sink stream, kept within this sink, with a pointer returned for use.
      * Do not free the returned pointer. When done with the stream, call CloseStream on the sink.

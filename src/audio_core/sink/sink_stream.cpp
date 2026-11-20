@@ -23,6 +23,47 @@
 
 namespace AudioCore::Sink {
 
+void SinkStream::Start(bool) {
+    std::scoped_lock lk{state_mutex};
+    if (system_paused) {
+        resume_on_system_resume = true;
+        return;
+    }
+    SetPaused(false);
+}
+
+void SinkStream::Stop() {
+    std::scoped_lock lk{state_mutex};
+    resume_on_system_resume = false;
+    SetPaused(true);
+}
+
+void SinkStream::SetSystemPaused(bool is_paused) {
+    std::scoped_lock lk{state_mutex};
+    if (system_paused == is_paused) {
+        return;
+    }
+    system_paused = is_paused;
+    if (is_paused) {
+        resume_on_system_resume = !paused;
+        SetPaused(true);
+    } else if (resume_on_system_resume) {
+        SetPaused(false);
+    }
+}
+
+void SinkStream::SetPaused(bool is_paused) {
+    if (paused == is_paused) {
+        return;
+    }
+    if (is_paused) {
+        SignalPause();
+    } else {
+        paused = false;
+    }
+    SetRunning(!is_paused);
+}
+
 void SinkStream::AppendBuffer(SinkBuffer& buffer, std::span<s16> samples) {
     if (type == StreamType::In)
         return;

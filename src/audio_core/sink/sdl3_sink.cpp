@@ -88,7 +88,6 @@ public:
         system_channels = system_channels_;
         device_channels = device_channels_;
 
-        SDL_AudioSpec spec{};
         spec.freq = TargetSampleRate;
         spec.channels = static_cast<u8>(device_channels);
         spec.format = SDL_AUDIO_S16;
@@ -100,17 +99,22 @@ public:
             capture = true;
         }
 
-        const SDL_AudioDeviceID audio_device =
+        requested_device =
             device_name.empty() ? (capture ? SDL_AUDIO_DEVICE_DEFAULT_RECORDING
                                            : SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK)
                                 : FindAudioDeviceByName(device_name, capture);
 
-        stream = SDL_OpenAudioDeviceStream(audio_device, &spec, &SDLSinkStream::DataCallback,
-                                           this);
+        stream = SDL_CreateAudioStream(&spec, &spec);
 
         if (stream == nullptr) {
-            LOG_CRITICAL(Audio_Sink, "Error opening SDL audio device: {}", SDL_GetError());
+            LOG_CRITICAL(Audio_Sink, "Error creating SDL audio stream: {}", SDL_GetError());
             return;
+        }
+
+        if (capture) {
+            static_cast<void>(SDL_SetAudioStreamPutCallback(stream, &SDLSinkStream::DataCallback, this));
+        } else {
+            static_cast<void>(SDL_SetAudioStreamGetCallback(stream, &SDLSinkStream::DataCallback, this));
         }
 
         SDL_AudioSpec stream_in{};
@@ -146,30 +150,27 @@ public:
         stream = nullptr;
     }
 
-    /**
-     * Start the sink stream.
-     *
-     * @param resume - Set to true if this is resuming the stream a previously-active stream.
-     *                 Default false.
-     */
-    void Start(bool resume = false) override {
-        if (stream == nullptr || !paused) {
+protected:
+    void SetRunning(bool running) override {
+        if (stream == nullptr) {
             return;
         }
-
-        paused = false;
-        static_cast<void>(SDL_ResumeAudioStreamDevice(stream));
-    }
-
-    /**
-     * Stop the sink stream.
-     */
-    void Stop() override {
-        if (stream == nullptr || paused) {
-            return;
+        if (running) {
+            device = SDL_OpenAudioDevice(requested_device, &spec);
+            if (device == 0) {
+                LOG_CRITICAL(Audio_Sink, "Error opening SDL audio device: {}", SDL_GetError());
+                return;
+            }
+            if (!SDL_BindAudioStream(device, stream)) {
+                LOG_CRITICAL(Audio_Sink, "Error binding SDL audio stream: {}", SDL_GetError());
+                SDL_CloseAudioDevice(device);
+                device = 0;
+            }
+        } else if (device != 0) {
+            // SDL's logical pause still feeds silence to the physical device.
+            SDL_CloseAudioDevice(device);
+            device = 0;
         }
-        SignalPause();
-        static_cast<void>(SDL_PauseAudioStreamDevice(stream));
     }
 
 private:
@@ -224,7 +225,10 @@ private:
         }
     }
 
-    /// SDL stream attached to an opened input/output device
+    SDL_AudioSpec spec{};
+    SDL_AudioDeviceID requested_device{};
+    SDL_AudioDeviceID device{};
+    /// SDL stream retained while its device is closed during a pause
     SDL_AudioStream* stream{};
 };
 
@@ -243,14 +247,17 @@ SDLSink::~SDLSink() = default;
 
 SinkStream* SDLSink::AcquireSinkStream(Core::System& system, u32 system_channels_,
                                        const std::string&, StreamType type) {
+    std::scoped_lock lk{stream_mutex};
     system_channels = system_channels_;
     SinkStreamPtr& stream = sink_streams.emplace_back(std::make_unique<SDLSinkStream>(
         device_channels, system_channels, output_device, input_device, type, system));
     stream->SetDeviceVolume(device_volume);
+    stream->SetSystemPaused(system_paused);
     return stream.get();
 }
 
 void SDLSink::CloseStream(SinkStream* stream) {
+    std::scoped_lock lk{stream_mutex};
     for (size_t i = 0; i < sink_streams.size(); i++) {
         if (sink_streams[i].get() == stream) {
             sink_streams[i].reset();
@@ -261,7 +268,16 @@ void SDLSink::CloseStream(SinkStream* stream) {
 }
 
 void SDLSink::CloseStreams() {
+    std::scoped_lock lk{stream_mutex};
     sink_streams.clear();
+}
+
+void SDLSink::SetSystemPaused(bool is_paused) {
+    std::scoped_lock lk{stream_mutex};
+    system_paused = is_paused;
+    for (auto& stream : sink_streams) {
+        stream->SetSystemPaused(is_paused);
+    }
 }
 
 f32 SDLSink::GetDeviceVolume() const {

@@ -29,6 +29,8 @@ public:
      */
     void Shutdown();
 
+    void SetSystemPaused(bool is_paused);
+
     /**
      * Get a reference to the audio manager.
      *

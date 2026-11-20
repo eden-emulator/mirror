@@ -222,6 +222,9 @@ struct System::Impl {
     void Run() {
         std::unique_lock<std::mutex> lk(suspend_guard);
 
+        if (audio_core) {
+            audio_core->SetSystemPaused(false);
+        }
         kernel.SuspendEmulation(false);
         core_timing.SyncPause(false);
         is_paused.store(false, std::memory_order_relaxed);
@@ -233,6 +236,9 @@ struct System::Impl {
         core_timing.SyncPause(true);
         kernel.SuspendEmulation(true);
         is_paused.store(true, std::memory_order_relaxed);
+        if (audio_core) {
+            audio_core->SetSystemPaused(true);
+        }
     }
 
     bool IsPaused() const {
