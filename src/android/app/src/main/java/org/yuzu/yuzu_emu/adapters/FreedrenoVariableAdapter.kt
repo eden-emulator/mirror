@@ -18,6 +18,7 @@ import org.yuzu.yuzu_emu.utils.NativeFreedrenoConfig
  */
 class FreedrenoVariableAdapter(
     private val context: Context,
+    private val onEditClicked: (FreedrenoVariable) -> Unit,
     private val onItemClicked: (FreedrenoVariable, () -> Unit) -> Unit
 ) : ListAdapter<FreedrenoVariable, FreedrenoVariableAdapter.VariableViewHolder>(DiffCallback) {
 
@@ -40,6 +41,10 @@ class FreedrenoVariableAdapter(
         fun bind(variable: FreedrenoVariable) {
             binding.variableName.text = variable.name
             binding.variableValue.text = variable.value
+
+            binding.buttonEdit.setOnClickListener {
+                onEditClicked(variable)
+            }
 
             binding.buttonDelete.setOnClickListener {
                 onItemClicked(variable) {

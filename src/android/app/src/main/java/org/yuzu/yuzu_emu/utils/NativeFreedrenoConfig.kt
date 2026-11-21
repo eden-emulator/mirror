@@ -37,6 +37,9 @@ object NativeFreedrenoConfig {
     external fun isFreedrenoEnvSet(varName: String): Boolean
 
     @Synchronized
+    external fun getFreedrenoEnvNames(): Array<String>
+
+    @Synchronized
     external fun clearFreedrenoEnv(varName: String): Boolean
 
     @Synchronized

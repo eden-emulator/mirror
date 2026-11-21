@@ -19,6 +19,7 @@
 #include <memory>
 #include <string>
 #include <sys/stat.h>
+#include <vector>
 
 #include <jni.h>
 
@@ -294,6 +295,19 @@ Java_org_yuzu_yuzu_1emu_utils_NativeFreedrenoConfig_isFreedrenoEnvSet(
     auto it = g_config->env_vars.find(var_name);
 
     return (it != g_config->env_vars.end() && !it->second.empty()) ? JNI_TRUE : JNI_FALSE;
+}
+
+JNIEXPORT jobjectArray JNICALL
+Java_org_yuzu_yuzu_1emu_utils_NativeFreedrenoConfig_getFreedrenoEnvNames(
+    JNIEnv* env, [[maybe_unused]] jobject obj) {
+    std::vector<std::string> names;
+    if (g_config) {
+        names.reserve(g_config->env_vars.size());
+        for (const auto& [key, value] : g_config->env_vars) {
+            names.push_back(key);
+        }
+    }
+    return Common::Android::ToJStringArray(env, names);
 }
 
 JNIEXPORT jboolean JNICALL

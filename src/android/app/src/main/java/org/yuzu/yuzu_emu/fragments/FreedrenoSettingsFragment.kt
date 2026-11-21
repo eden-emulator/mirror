@@ -98,10 +98,17 @@ class FreedrenoSettingsFragment : Fragment() {
         presetAdapter.submitList(FreedrenoPresets.ALL_PRESETS)
 
         // Setup current settings adapter (vertical list)
-        settingsAdapter = FreedrenoVariableAdapter(requireContext()) { variable, onDelete ->
-            onDelete()
-            loadCurrentSettings() // Refresh list after deletion
-        }
+        settingsAdapter = FreedrenoVariableAdapter(
+            requireContext(),
+            onEditClicked = { variable ->
+                binding.variableNameInput.setText(variable.name)
+                binding.variableValueInput.setText(variable.value)
+            },
+            onItemClicked = { _ , onDelete ->
+                onDelete()
+                loadCurrentSettings() // Refresh list after deletion
+            }
+        )
         binding.listFreedrenoSettings.apply {
             adapter = settingsAdapter
             layoutManager = LinearLayoutManager(requireContext())
@@ -109,21 +116,8 @@ class FreedrenoSettingsFragment : Fragment() {
     }
 
     private fun loadCurrentSettings() {
-        // Load all currently set environment variables
-        val variables = mutableListOf<FreedrenoVariable>()
-
-        // Common variables to check
-        val commonVars = listOf(
-            "TU_DEBUG", "FD_MESA_DEBUG", "IR3_SHADER_DEBUG",
-            "FD_RD_DUMP", "FD_RD_DUMP_FRAMES", "FD_RD_DUMP_TESTNAME",
-            "TU_BREADCRUMBS", "FD_DEV_FEATURES"
-        )
-
-        for (varName in commonVars) {
-            if (NativeFreedrenoConfig.isFreedrenoEnvSet(varName)) {
-                val value = NativeFreedrenoConfig.getFreedrenoEnv(varName)
-                variables.add(FreedrenoVariable(varName, value))
-            }
+        val variables = NativeFreedrenoConfig.getFreedrenoEnvNames().map { varName ->
+            FreedrenoVariable(varName, NativeFreedrenoConfig.getFreedrenoEnv(varName))
         }
 
         settingsAdapter.submitList(variables)
