@@ -791,6 +791,13 @@ void HostMemory::Protect(size_t virtual_offset, size_t length, MemoryPermission 
 }
 
 void HostMemory::ClearBackingRegion(size_t physical_offset, size_t length, u32 fill_value) {
+#if (defined(__linux__) || defined(__ANDROID__)) && defined(MADV_REMOVE)
+    if (fill_value == 0 && length >= HugePageSize) {
+        const long page_size = sysconf(_SC_PAGESIZE);
+        if (page_size > 0 && physical_offset % page_size == 0 && length % page_size == 0 &&
+            madvise(backing_base + physical_offset, length, MADV_REMOVE) == 0) return;
+    }
+#endif
     std::memset(backing_base + physical_offset, fill_value, length);
 }
 

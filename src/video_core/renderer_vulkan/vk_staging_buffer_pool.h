@@ -55,6 +55,7 @@ private:
     struct StagingBuffer {
         vk::Buffer buffer;
         VkDeviceAddress device_address;
+        VkDeviceSize size;
         std::span<u8> mapped_span;
         MemoryUsage usage;
         u32 log2_level;

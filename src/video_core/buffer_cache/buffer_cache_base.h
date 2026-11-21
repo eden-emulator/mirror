@@ -170,13 +170,8 @@ public:
 
 template <class P>
 class BufferCache : public VideoCommon::ChannelSetupCaches<BufferCacheChannelInfo> {
-    // Page size for caching purposes.
-    // This is unrelated to the CPU page size and it can be changed as it seems optimal.
-#ifdef YUZU_LEGACY
-    static constexpr u32 CACHING_PAGEBITS = 12;
-#else
-    static constexpr u32 CACHING_PAGEBITS = 16;
-#endif
+    // Keep adjacent device-page mappings from acquiring the same buffer owner.
+    static constexpr u32 CACHING_PAGEBITS = Core::DEVICE_PAGEBITS;
     static constexpr u64 CACHING_PAGESIZE = u64{1} << CACHING_PAGEBITS;
 
     static constexpr bool IS_OPENGL = P::IS_OPENGL;
