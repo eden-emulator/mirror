@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <limits>
 #include <optional>
 #include <bit>
@@ -213,6 +214,7 @@ typename P::ImageView& TextureCache<P>::GetImageView(u32 index) noexcept {
 template <class P>
 void TextureCache<P>::MarkModification(ImageId id) noexcept {
     MarkModification(slot_images[id]);
+    QueuePreemptiveDownload(id);
 }
 
 template <class P>
@@ -2565,6 +2567,7 @@ void TextureCache<P>::PrepareImage(ImageId image_id, bool is_modification, bool 
     }
     if (is_modification) {
         MarkModification(image);
+        QueuePreemptiveDownload(image_id);
     }
     lru_cache.Touch(image.lru_index, frame_tick);
 }
@@ -2667,6 +2670,26 @@ void TextureCache<P>::CopyImage(ImageId dst_id, ImageId src_id, std::vector<Imag
         UNIMPLEMENTED_IF(copy.extent != scaled_extent);
 
         runtime.ConvertImage(dst_framebuffer, dst_view, src_view);
+    }
+}
+
+template <class P>
+void TextureCache<P>::QueuePreemptiveDownload(ImageId image_id) {
+    // Images the CPU has read back (forced_flushed) are downloaded preemptively so later reads see
+    // the GPU result without a synchronous flush. Render targets queue this when they are bound;
+    // images written in any other way (blits, copies, storage writes) have to queue it here or
+    // the CPU keeps reading the contents of its first readback.
+    if constexpr (IMPLEMENTS_ASYNC_DOWNLOADS) {
+        if (!slot_images[image_id].info.forced_flushed) {
+            return;
+        }
+        const bool is_queued =
+            std::ranges::any_of(uncommitted_downloads, [image_id](const PendingDownload& download) {
+                return download.is_swizzle && download.object_id == image_id;
+            });
+        if (!is_queued) {
+            uncommitted_downloads.emplace_back(PendingDownload{true, 0, image_id});
+        }
     }
 }
 

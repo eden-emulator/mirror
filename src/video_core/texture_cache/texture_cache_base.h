@@ -397,6 +397,9 @@ private:
     /// Mark an image as modified from the GPU
     void MarkModification(ImageBase& image) noexcept;
 
+    /// Queue an asynchronous download of an image the CPU reads back after GPU modifications
+    void QueuePreemptiveDownload(ImageId image_id);
+
     /// Synchronize image aliases, copying data if needed
     void SynchronizeAliases(ImageId image_id);
 
