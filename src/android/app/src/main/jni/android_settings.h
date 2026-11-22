@@ -68,6 +68,8 @@ namespace AndroidSettings {
                                                   Settings::Category::Android};
         Settings::Setting<bool> invert_confirm_back_controller_buttons{
             linkage, false, "invert_confirm_back_controller_buttons", Settings::Category::Android};
+        Settings::Setting<bool> galaxy_fold_gyro_fix{linkage, false, "galaxy_fold_gyro_fix",
+                                                    Settings::Category::Android};
 
         // Input/performance overlay settings
         std::vector<OverlayControlData> overlay_control_data;
