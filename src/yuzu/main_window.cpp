@@ -774,10 +774,15 @@ private:
 
 } // Anonymous namespace
 
-MainWindow::MainWindow(bool has_broken_vulkan)
+MainWindow::MainWindow(bool has_broken_vulkan, const QString &message, const QString &title)
     : ui{std::make_unique<Ui::MainWindow>()},
       input_subsystem{std::make_shared<InputCommon::InputSubsystem>()}, user_data_migrator{this} {
     QtCommon::Init(this);
+
+    // show msg if provided
+    if (!message.isEmpty()) {
+        QtCommon::Frontend::Information(title.isEmpty() ? tr("Message") : title, message);
+    }
 
     Common::FS::CreateEdenPaths();
     this->config = std::make_unique<QtConfig>();

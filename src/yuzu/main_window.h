@@ -181,7 +181,7 @@ class MainWindow : public QMainWindow {
 public:
     void filterBarSetChecked(bool state);
     void UpdateUITheme();
-    explicit MainWindow(bool has_broken_vulkan);
+    explicit MainWindow(bool has_broken_vulkan, const QString &message, const QString &title);
     ~MainWindow() override;
 
     bool DropAction(QDropEvent* event);

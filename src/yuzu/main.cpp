@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+#include <algorithm>
 #include <QApplication>
 #include "startup_checks.h"
 
@@ -64,20 +65,45 @@ static Qt::HighDpiScaleFactorRoundingPolicy GetHighDpiRoundingPolicy() {
 }
 
 int main(int argc, char* argv[]) {
+    std::vector<std::string> args{argv + 1, argv + argc};
 #if YUZU_ROOM
-    bool launch_room = false;
-    for (int i = 1; i < argc; i++) {
-        if (strcmp(argv[i], "--room") == 0) {
-            launch_room = true;
-        }
-    }
-
-    if (launch_room) {
+    if (std::ranges::find(args, "--room") != args.end()) {
         LaunchRoom(argc, argv, true);
         return 0;
     }
 #endif
 
+    // show a message on startup
+    QString message;
+    const auto msg_pos = std::ranges::find(args, "--message");
+    const auto msg_next = std::next(msg_pos);
+    if (msg_pos != args.end() && msg_next != args.end()) {
+        message = QString::fromStdString(*msg_next);
+        args.erase(msg_pos, msg_next + 1);
+    }
+
+    // ditto but title
+    QString title;
+    const auto title_pos = std::ranges::find(args, "--title");
+    const auto title_next = std::next(title_pos);
+    if (title_pos != args.end() && title_next != args.end()) {
+        title = QString::fromStdString(*title_next);
+        args.erase(title_pos, title_next + 1);
+    }
+
+    // rebuild argc/argv
+    std::vector<char*> new_argv;
+    new_argv.reserve(args.size() + 1);
+
+    for (auto& s : args)
+        new_argv.push_back(s.data());
+
+    new_argv.push_back(nullptr);
+
+    int argc2 = static_cast<int>(args.size());
+    char** argv2 = new_argv.data();
+
+    // startup checks and such
     bool has_broken_vulkan = false;
     bool is_child = false;
     if (CheckEnvVars(&is_child)) {
@@ -140,7 +166,7 @@ int main(int argc, char* argv[]) {
     QApplication::setStyle(QStringLiteral("windowsvista"));
 #endif
 
-    QApplication app(argc, argv);
+    QApplication app(argc2, argv2);
 
     // Qt changes the locale and causes issues in float conversion using std::to_string() when
     // generating shaders
@@ -148,7 +174,7 @@ int main(int argc, char* argv[]) {
 
     int result = 0;
     {
-        MainWindow main_window{has_broken_vulkan};
+        MainWindow main_window{has_broken_vulkan, message, title};
         // After settings have been loaded by MainWindow, apply the filter
         main_window.show();
 

@@ -16,6 +16,8 @@
 
 #include <windows.h>
 
+namespace fs = std::filesystem;
+
 static bool waitForPid(uint64_t pid) {
     HANDLE h = OpenProcess(SYNCHRONIZE | PROCESS_QUERY_LIMITED_INFORMATION, FALSE, DWORD(pid));
     if (!h) {
@@ -30,10 +32,36 @@ static bool waitForPid(uint64_t pid) {
     return result == WAIT_OBJECT_0;
 }
 
-// TODO: On error, launch main exe with an arg that prints a warning.
+static void launchEden(fs::path app_dir, std::string_view message = "") {
+    namespace bp = boost::process::v2;
+    const auto exe = fs::path{app_dir} / "eden.exe";
+
+    // TODO search through executables for Qt symbols or something
+    if (!fs::exists(exe)) {
+        std::println(stderr, "eden.exe does not exist in the new directory.");
+        return;
+    }
+
+    std::vector<std::string> args;
+    if (!message.empty()) {
+        args.emplace_back("--message");
+        args.emplace_back(message);
+
+        args.emplace_back("--title");
+        args.emplace_back("Updater Failed");
+    }
+
+    try {
+        boost::asio::io_context ctx;
+        bp::process child(ctx, exe.string(), args);
+        child.detach();
+    } catch (std::exception &e) {
+        std::println(stderr, "Failed to spawn child process: {}", e.what());
+    }
+}
+
 // TODO(crueter): unicode handling??? kys
 int main(int argc, char** argv) {
-    namespace fs = std::filesystem;
     std::vector<std::string> args{argv + 1, argv + argc};
 
     if (args.size() < 5) {
@@ -46,7 +74,9 @@ int main(int argc, char** argv) {
     try {
         pid = std::stoull(args[0]);
     } catch (...) {
-        std::println(stderr, "Invalid PID string.");
+        std::string message = "Invalid PID string.";
+        std::println(stderr, "{}", message);
+        launchEden(fs::path{args[1]}, message);
         return 2;
     }
 
@@ -65,7 +95,9 @@ int main(int argc, char** argv) {
 
     // Wait for old PID.
     if (!waitForPid(pid)) {
-        std::println(stderr, "Old process did not exit cleanly after 60 seconds.");
+        std::string message = "Old process did not exit cleanly after 60 seconds.";
+        std::println(stderr, "{}", message);
+        launchEden(app_dir, message);
         return 3;
     }
 
@@ -78,7 +110,9 @@ int main(int argc, char** argv) {
         fs::rename(old_user, new_user, ec);
 
         if (ec) {
-            std::println(stderr, "Failed to copy old user directory: {}", ec.message());
+            std::string message = "Failed to copy old user directory: " + ec.message();
+            std::println(stderr, "{}", message);
+            launchEden(app_dir, message);
             return 4;
         }
     }
@@ -92,7 +126,9 @@ int main(int argc, char** argv) {
         fs::rename(app_dir, old_dir, ec);
 
         if (ec) {
-            std::println(stderr, "Failed to create old directory: {}", ec.message());
+            std::string message = "Failed to create old directory: " + ec.message();
+            std::println(stderr, "{}", message);
+            launchEden(app_dir, message);
             return 5;
         }
     } else {
@@ -100,7 +136,9 @@ int main(int argc, char** argv) {
         fs::remove_all(app_dir, ec);
 
         if (ec) {
-            std::println(stderr, "Failed to remove existing app directory: {}", ec.message());
+            std::string message = "Failed to remove existing app directory: " + ec.message();
+            std::println(stderr, "{}", message);
+            launchEden(app_dir, message);
             return 6;
         }
     }
@@ -111,29 +149,16 @@ int main(int argc, char** argv) {
         fs::rename(staging_dir, app_dir, ec);
 
         if (ec) {
-            std::println(stderr, "Failed to move staging directory: {}", ec.message());
+            std::string message = "Failed to move staging directory: " + ec.message();
+            std::println(stderr, "{}", message);
+            launchEden(staging_dir, message);
             return 7;
         }
     }
 
     // spawn new proc and leave
     // TODO(crueter): configurable exe name?
-    namespace bp = boost::process::v2;
-    const auto exe = fs::path{app_dir} / "eden.exe";
-
-    if (!fs::exists(exe)) {
-        std::println(stderr, "eden.exe does not exist in the new directory.");
-        return 8;
-    }
-
-    try {
-        boost::asio::io_context ctx;
-        bp::process child(ctx, exe.string(), {});
-        child.detach();
-    } catch (std::exception &e) {
-        std::println(stderr, "Failed to spawn child process: {}", e.what());
-        return 9;
-    }
+    launchEden(app_dir);
 
     return 0;
 }

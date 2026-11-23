@@ -20,6 +20,7 @@ add_library(qt_common STATIC
     util/path.h util/path.cpp
     util/game.h util/game.cpp
     util/meta.h util/meta.cpp
+    util/net.h util/net.cpp
     util/content.h util/content.cpp
     util/rom.h util/rom.cpp
     util/applet.h util/applet.cpp
@@ -51,10 +52,6 @@ if (USE_DISCORD_PRESENCE)
     )
     target_link_libraries(qt_common PUBLIC DiscordRPC::discord-rpc)
 
-    if (YUZU_USE_BUNDLED_OPENSSL)
-        target_link_libraries(qt_common PUBLIC OpenSSL::SSL OpenSSL::Crypto)
-    endif()
-
     target_compile_definitions(qt_common PUBLIC USE_DISCORD_PRESENCE)
 endif()
 
@@ -82,7 +79,7 @@ target_compile_definitions(qt_common PUBLIC
 
 target_link_libraries(qt_common PRIVATE core Qt6::Core Qt6::Concurrent SimpleIni::SimpleIni QuaZip::QuaZip)
 target_link_libraries(qt_common PUBLIC frozen::frozen-headers Vulkan::Headers)
-target_link_libraries(qt_common PRIVATE gamemode::headers frontend_common)
+target_link_libraries(qt_common PRIVATE gamemode::headers frontend_common OpenSSL::SSL OpenSSL::Crypto)
 
 if (ENABLE_OPENGL)
     target_compile_definitions(qt_common PUBLIC HAS_OPENGL)
