@@ -27,29 +27,53 @@ parse_script_args(args)
 
 get_cpmfile_content(cpmfile)
 foreach(key ${args})
-    if (ci)
-        continue()
-    endif()
-
     parse_key("${key}")
     echo("-- ${key}")
 
-    get_package_url_object(pkg_url)
-    get_package_hash("${pkg_url}" pkg_hash)
+    if (ci)
+        set(ARTIFACT_NAME ${artifact})
+        set(ARTIFACT_VERSION ${version})
+        set(ARTIFACT_EXT ${extension})
+        set(ARTIFACT_GIT_HOST ${git_host})
+        set(ARTIFACT_REPO ${repo})
 
-    if (pkg_hash STREQUAL hash)
-        echo("Hashes match")
-    else()
-        echo_error("Hash mismatch")
-        echo_error("Expected: ${hash}")
-        echo_error("Got:      ${pkg_hash}")
+        ci_collect_all_hashes(collected)
 
-        modify_package("${object}" "${version}" "${pkg_hash}" new_object)
+        string(JSON len LENGTH "${collected}")
+        math(EXPR last_index "${len} - 1")
+
+        foreach(i RANGE ${last_index})
+            string(JSON pkgname MEMBER "${collected}" "${i}")
+            string(JSON new_hash GET "${collected}" "${pkgname}")
+            string(JSON old_hash GET "${hashes}" "${pkgname}")
+            if(NOT new_hash STREQUAL old_hash)
+                echo_error("Hash mismatch: ${key} [${pkgname}]")
+                string(JSON hashes SET "${hashes}" "${pkgname}" "\"${new_hash}\"")
+            endif()
+        endforeach()
+
+        string(JSON object SET "${object}" hashes "${hashes}")
 
         # update cached cpmfile content
-        string(JSON cpmfile SET "${cpmfile}" "${key}" "${new_object}")
+        string(JSON cpmfile SET "${cpmfile}" "${key}" "${object}")
+    else()
+        get_package_url_object(pkg_url)
+        get_package_hash("${pkg_url}" pkg_hash)
 
-        echo("Corrected hash for ${key}")
+        if (pkg_hash STREQUAL hash)
+            echo("Hashes match")
+        else()
+            echo_error("Hash mismatch")
+            echo_error("Expected: ${hash}")
+            echo_error("Got:      ${pkg_hash}")
+
+            modify_package("${object}" "${version}" "${pkg_hash}" new_object)
+
+            # update cached cpmfile content
+            string(JSON cpmfile SET "${cpmfile}" "${key}" "${new_object}")
+
+            echo("Corrected hash for ${key}")
+        endif()
     endif()
 endforeach()
 

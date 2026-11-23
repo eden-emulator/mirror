@@ -1,6 +1,36 @@
 # SPDX-FileCopyrightText: Copyright 2026 crueter
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
+# This file incorporates logic and code from CPM.cmake:
+
+# CPM.cmake - CMake's missing package manager
+# ===========================================
+# See https://github.com/cpm-cmake/CPM.cmake for usage and update instructions.
+#
+# MIT License
+# -----------
+#[[
+    Copyright (c) 2019-2023 Lars Melchior and contributors
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to deal
+    in the Software without restriction, including without limitation the rights
+    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+    copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in all
+    copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+    SOFTWARE.
+]]
+
 cmake_minimum_required(VERSION 3.31)
 
 if(MSVC OR ANDROID OR IOS)
@@ -9,7 +39,11 @@ else()
     set(BUNDLED_DEFAULT OFF)
 endif()
 
-# TODO: Handle nested cpmutil includes
+# FIXME(crueter): Handle multiple cpmfiles
+include_guard(GLOBAL)
+
+# reset internal registry
+set(CPMUTIL_PACKAGES "" CACHE INTERNAL "Packages registered by CPMUtil" FORCE)
 
 # Root directory detection
 if (CMAKE_SCRIPT_MODE_FILE)
@@ -35,7 +69,7 @@ option(CPMUTIL_FORCE_SYSTEM
 set(CPMUTIL_PATCH_DIR "${CPMUTIL_ROOT}/.patch" CACHE STRING
     "Directory containing patches for packages")
 
-include(CPM)
+include(FetchContent)
 
 # Rudimentary target architecture detection
 # This is in script mode, CI packages will be nonfunctional. TODO
@@ -83,6 +117,135 @@ else()
     message(DEBUG "[CPMUtil] cpmfile ${CPMUTIL_JSON_FILE} "
         "does not exist, AddJsonPackage will be a no-op")
 endif()
+
+############
+# CPM CORE #
+############
+
+# Create a custom FindXXX.cmake module for a CPM package.
+# This prevents `find_package(NAME)` from finding the system library
+# This is a noop in script mode
+function(cpm_util_internal_create_module_file Name)
+    if(DEFINED CMAKE_FIND_PACKAGE_REDIRECTS_DIR)
+        # https://cmake.org/cmake/help/latest/module/FetchContent.html
+        string(TOLOWER ${Name} NameLower)
+
+        file(WRITE ${CMAKE_FIND_PACKAGE_REDIRECTS_DIR}/${NameLower}-config.cmake
+            "include(\"\${CMAKE_CURRENT_LIST_DIR}/${NameLower}-extra.cmake\" \
+        OPTIONAL)\n"
+            "include(\"\${CMAKE_CURRENT_LIST_DIR}/${Name}Extra.cmake\" OPTIONAL)\n")
+
+        file(WRITE ${CMAKE_FIND_PACKAGE_REDIRECTS_DIR}/${NameLower}-config-version.cmake
+            "set(PACKAGE_VERSION_COMPATIBLE TRUE)\n"
+            "set(PACKAGE_VERSION_EXACT TRUE)\n")
+    endif()
+endfunction()
+
+# main logic
+function(cpm_util_internal_add_package)
+    set(oneValueArgs
+        NAME
+        DOWNLOAD_ONLY
+        SOURCE_DIR
+        EXCLUDE_FROM_ALL
+        SOURCE_SUBDIR)
+
+    set(multiValueArgs OPTIONS)
+
+    cmake_parse_arguments(
+        CPM_ARGS
+        ""
+        "${oneValueArgs}"
+        "${multiValueArgs}"
+        "${ARGN}")
+
+    if(NOT DEFINED CPM_ARGS_SOURCE_DIR)
+        message(FATAL_ERROR "[CPMUtil] Internal: SOURCE_DIR is required")
+    endif()
+
+    if(CPM_ARGS_DOWNLOAD_ONLY)
+        set(DOWNLOAD_ONLY ${CPM_ARGS_DOWNLOAD_ONLY})
+    else()
+        # Default to DOWNLOAD_ONLY in script mode.
+        set(DOWNLOAD_ONLY ${CMAKE_SCRIPT_MODE_FILE})
+    endif()
+
+    if(NOT DEFINED CPM_ARGS_NAME)
+        message(FATAL_ERROR "[CPMUtil] Internal: NAME is required")
+    endif()
+
+    if(DEFINED FETCHCONTENT_BASE_DIR)
+        set(CPM_FETCHCONTENT_BASE_DIR ${FETCHCONTENT_BASE_DIR})
+    else()
+        set(CPM_FETCHCONTENT_BASE_DIR ${CMAKE_BINARY_DIR}/_deps)
+    endif()
+
+    string(TOLOWER ${CPM_ARGS_NAME} lower_case_name)
+
+    set(fetch_source_dir ${CPM_ARGS_SOURCE_DIR})
+    if(NOT IS_ABSOLUTE ${CPM_ARGS_SOURCE_DIR})
+        get_filename_component(
+            fetch_source_dir
+            ${CPM_ARGS_SOURCE_DIR}
+            REALPATH
+            BASE_DIR ${CMAKE_CURRENT_BINARY_DIR}
+        )
+    endif()
+
+    # FetchContent args
+    set(fetchContentDeclareExtraArgs SYSTEM)
+    if(${CPM_ARGS_EXCLUDE_FROM_ALL})
+        list(APPEND fetchContentDeclareExtraArgs EXCLUDE_FROM_ALL)
+    endif()
+
+    if(DEFINED CPM_ARGS_SOURCE_SUBDIR)
+        list(APPEND fetchContentDeclareExtraArgs
+            SOURCE_SUBDIR ${CPM_ARGS_SOURCE_SUBDIR})
+    endif()
+
+    if(CPM_ARGS_OPTIONS AND NOT DOWNLOAD_ONLY)
+        foreach(OPTION ${CPM_ARGS_OPTIONS})
+            cpm_util_internal_parse_option("${OPTION}")
+            set(${OPTION_KEY} "${OPTION_VALUE}")
+        endforeach()
+    endif()
+
+    if(DOWNLOAD_ONLY)
+        set(${CPM_ARGS_NAME}_SOURCE_DIR "${fetch_source_dir}" PARENT_SCOPE)
+        set(${CPM_ARGS_NAME}_BINARY_DIR "${CPM_FETCHCONTENT_BASE_DIR}/${lower_case_name}-build" PARENT_SCOPE)
+    else()
+        cpm_util_internal_create_module_file(${CPM_ARGS_NAME})
+
+        FetchContent_Declare(${CPM_ARGS_NAME}
+            ${fetchContentDeclareExtraArgs}
+            SOURCE_DIR ${fetch_source_dir})
+
+        FetchContent_MakeAvailable(${CPM_ARGS_NAME})
+
+        set(${CPM_ARGS_NAME}_SOURCE_DIR "${${lower_case_name}_SOURCE_DIR}" PARENT_SCOPE)
+        set(${CPM_ARGS_NAME}_BINARY_DIR "${${lower_case_name}_BINARY_DIR}" PARENT_SCOPE)
+    endif()
+
+    set(${CPM_ARGS_NAME}_ADDED YES PARENT_SCOPE)
+endfunction()
+
+# splits a package option
+function(cpm_util_internal_parse_option OPTION)
+    string(REGEX MATCH "^[^ ]+" OPTION_KEY "${OPTION}")
+    string(LENGTH "${OPTION}" OPTION_LENGTH)
+    string(LENGTH "${OPTION_KEY}" OPTION_KEY_LENGTH)
+
+    if(OPTION_KEY_LENGTH STREQUAL OPTION_LENGTH)
+        # no value for key provided, assume user wants to set option to "ON"
+        set(OPTION_VALUE "ON")
+    else()
+        math(EXPR OPTION_KEY_LENGTH "${OPTION_KEY_LENGTH}+1")
+        string(SUBSTRING "${OPTION}" "${OPTION_KEY_LENGTH}" "-1" OPTION_VALUE)
+    endif()
+
+    set(OPTION_KEY "${OPTION_KEY}" PARENT_SCOPE)
+    set(OPTION_VALUE "${OPTION_VALUE}" PARENT_SCOPE)
+endfunction()
 
 #############
 # UTILITIES #
@@ -176,7 +339,7 @@ endfunction()
 
 # Download a URL to file, with a sha512 hash
 # And retry 5 times
-function(cpm_download url file)
+function(cpm_util_download url file)
     echo("Downloading ${url} to ${file}")
     list(LENGTH ARGN argn_len)
     if(argn_len GREATER 0)
@@ -311,7 +474,7 @@ function(fetch_package)
 
     # Download
     set(file ${path_parent}/${base_filename})
-    cpm_download(${ARG_URL} ${file} ${ARG_HASH})
+    cpm_util_download(${ARG_URL} ${file} ${ARG_HASH})
     echo("Downloaded ${base_filename}")
 
     # Extract
@@ -353,19 +516,19 @@ endfunction()
 # compute a hash of all patch file contents
 # if there are no patches, returns none
 function(compute_patch_key patches out)
-  if(NOT patches)
-    set("${out}" "none" PARENT_SCOPE)
-    return()
-  endif()
+    if(NOT patches)
+        set("${out}" "none" PARENT_SCOPE)
+        return()
+    endif()
 
-  set(combined "")
-  foreach(PATCH ${patches})
-    file(READ "${PATCH}" contents)
-    string(APPEND combined "${contents}")
-  endforeach()
+    set(combined "")
+    foreach(PATCH ${patches})
+        file(READ "${PATCH}" contents)
+        string(APPEND combined "${contents}")
+    endforeach()
 
-  string(SHA512 key "${combined}")
-  set("${out}" "${key}" PARENT_SCOPE)
+    string(SHA512 key "${combined}")
+    set("${out}" "${key}" PARENT_SCOPE)
 endfunction()
 
 # Check if a package needs to be redownloaded. This can occur if:
@@ -391,7 +554,7 @@ function(needs_refetch path patch_key out)
 endfunction()
 
 # Message
-function(cpm_utils_message level)
+function(cpm_util_message level)
     string(REPLACE ";" " " message "${ARGN}")
     message(${level} "[CPMUtil] ${message}")
 endfunction()
@@ -454,11 +617,24 @@ function(get_json_element object out member)
     set("${out}" "${outvar}" PARENT_SCOPE)
 endfunction()
 
-# register a package to CPMUtil's global registry
+# register a package and all its components to CPMUtil's cache registry
 function(cpmutil_register_package name url version)
-    set_property(GLOBAL APPEND PROPERTY CPM_PACKAGE_NAMES ${name})
-    set_property(GLOBAL APPEND PROPERTY CPM_PACKAGE_URLS ${url})
-    set_property(GLOBAL APPEND PROPERTY CPM_PACKAGE_SHAS "${version}")
+    set(names "${CPMUTIL_PACKAGES}")
+    if (NOT "${name}" IN_LIST names)
+        list(APPEND names "${name}")
+        set(CPMUTIL_PACKAGES "${names}" CACHE INTERNAL "" FORCE)
+    endif()
+
+    set(CPMUTIL_PACKAGE_${name}_VERSION "${version}" CACHE INTERNAL "Version of ${name}" FORCE)
+    set(CPMUTIL_PACKAGE_${name}_URL "${url}" CACHE INTERNAL "Upstream URL of ${name}" FORCE)
+endfunction()
+
+function(cpmutil_mark_package_added name src bin sys)
+    set(prefix CPMUTIL_PACKAGE)
+
+    set(${prefix}_${name}_SOURCE_DIR "${src}" CACHE INTERNAL "Bundled source directory for ${name}" FORCE)
+    set(${prefix}_${name}_BINARY_DIR "${bin}" CACHE INTERNAL "Build directory for ${name}" FORCE)
+    set(${prefix}_${name}_SYSTEM "${sys}" CACHE INTERNAL "Whether or not ${name} is a system package" FORCE)
 endfunction()
 
 # Determine whether or not a package has a viable system candidate.
@@ -468,10 +644,7 @@ function(SystemPackageViable JSON_NAME)
     parse_object(${object})
 
     string(REPLACE " " ";" find_args "${find_args}")
-    if(${package}_FORCE_BUNDLED OR
-        (CPMUTIL_FORCE_BUNDLED
-         AND NOT ${package}_FORCE_SYSTEM
-         AND NOT CPMUTIL_FORCE_SYSTEM))
+    if(${package}_FORCE_BUNDLED OR (CPMUTIL_FORCE_BUNDLED AND NOT ${package}_FORCE_SYSTEM AND NOT CPMUTIL_FORCE_SYSTEM))
         set(${package}_FOUND OFF)
     else()
         find_package(${package} ${min_version} ${find_args} QUIET NO_POLICY_SCOPE)
@@ -533,16 +706,13 @@ endfunction()
 macro(process_version_replacements)
     # numeric version text replacement
     if (numeric_version)
-        string(REPLACE "%NUMERIC_VERSION%" "${numeric_version}"
-            version ${version})
-        string(REPLACE "%NUMERIC_VERSION%" "${numeric_version}"
-            artifact ${artifact})
+        string(REPLACE "%NUMERIC_VERSION%" "${numeric_version}" version ${version})
+        string(REPLACE "%NUMERIC_VERSION%" "${numeric_version}" artifact ${artifact})
     endif()
 
     # version text replacement
     if (artifact)
-        string(REPLACE "%VERSION%" "${version}"
-            artifact ${artifact})
+        string(REPLACE "%VERSION%" "${version}" artifact ${artifact})
     endif()
 endmacro()
 
@@ -555,23 +725,16 @@ macro(parse_object object)
     get_json_element("${object}" git_host git_host "github.com")
 
     if (NOT version)
-        cpm_utils_message(FATAL_ERROR "${JSON_NAME}: version is required")
+        cpm_util_message(FATAL_ERROR "${JSON_NAME}: version is required")
     endif()
 
     if(ci)
         get_json_element("${object}" name name "${JSON_NAME}")
         get_json_element("${object}" extension extension "tar.zst")
-        get_json_element("${object}" raw_disabled disabled_platforms)
-
-        if(raw_disabled)
-            array_to_list("${raw_disabled}"
-                ${raw_disabled_LENGTH} disabled_platforms)
-        else()
-            set(disabled_platforms "")
-        endif()
+        get_json_element("${object}" hashes hashes)
     else()
+        # TODO: correct hash if missing
         get_json_element("${object}" hash hash)
-        get_json_element("${object}" min_version min_version)
         get_json_element("${object}" url url)
         get_json_element("${object}" artifact artifact)
         get_json_element("${object}" source_subdir source_subdir)
@@ -580,6 +743,7 @@ macro(parse_object object)
         get_json_element("${object}" find_args find_args)
         get_json_element("${object}" skip_updates skip_updates OFF)
         get_json_element("${object}" raw_patches patches)
+        get_json_element("${object}" min_version min_version)
 
         process_version_replacements()
 
@@ -594,7 +758,7 @@ macro(parse_object object)
                 set(full_patch
                     "${CPMUTIL_PATCH_DIR}/${JSON_NAME}/${_patch}")
                 if(NOT EXISTS ${full_patch})
-                    cpm_utils_message(FATAL_ERROR
+                    cpm_util_message(FATAL_ERROR
                         "${JSON_NAME} specifies patch"
                         "${full_patch} which does not exist")
                 endif()
@@ -625,18 +789,18 @@ endmacro()
 # Get the JSON object for a key. Outputs to "object"
 function(get_json_object key)
     if(NOT DEFINED CPMFILE_CONTENT)
-        cpm_utils_message(FATAL_ERROR "${key}: No cpmfile present")
+        cpm_util_message(FATAL_ERROR "${key}: No cpmfile present")
     endif()
 
     if(NOT DEFINED key)
-        cpm_utils_message(FATAL_ERROR "No JSON key specified")
+        cpm_util_message(FATAL_ERROR "No JSON key specified")
     endif()
 
     string(JSON object ERROR_VARIABLE
         err GET "${CPMFILE_CONTENT}" "${key}")
 
     if(err)
-        cpm_utils_message(FATAL_ERROR "${key} not found in cpmfile\n"
+        cpm_util_message(FATAL_ERROR "${key} not found in cpmfile\n"
             "${err}")
     endif()
 
@@ -690,7 +854,7 @@ function(AddJsonPackage)
             REPO "${repo}"
             PACKAGE "${package}"
             EXTENSION "${extension}"
-            DISABLED_PLATFORMS "${disabled_platforms}"
+            HASHES "${hashes}"
 
             GIT_HOST "${git_host}"
 
@@ -762,11 +926,11 @@ function(AddPackage)
         "${ARGN}")
 
     if(NOT DEFINED PKG_ARGS_NAME)
-        cpm_utils_message(FATAL_ERROR "AddPackage: NAME is required")
+        cpm_util_message(FATAL_ERROR "AddPackage: NAME is required")
     endif()
 
     if(NOT DEFINED PKG_ARGS_VERSION)
-        cpm_utils_message(FATAL_ERROR "${PKG_ARGS_NAME}: VERSION is required")
+        cpm_util_message(FATAL_ERROR "${PKG_ARGS_NAME}: VERSION is required")
     endif()
 
     set(${PKG_ARGS_NAME}_CUSTOM_DIR "" CACHE STRING
@@ -789,10 +953,10 @@ function(AddPackage)
         set(pkg_git_url ${PKG_ARGS_URL})
     endif()
 
-    cpm_utils_message(DEBUG "${PKG_ARGS_NAME} download URL is ${PKG_ARGS_URL}")
+    cpm_util_message(DEBUG "${PKG_ARGS_NAME} download URL is ${PKG_ARGS_URL}")
 
     if(NOT DEFINED PKG_ARGS_HASH)
-        cpm_utils_message(FATAL_ERROR "${PKG_ARGS_NAME}: No hash defined")
+        cpm_util_message(FATAL_ERROR "${PKG_ARGS_NAME}: No hash defined")
     endif()
 
     #[[
@@ -850,16 +1014,10 @@ function(AddPackage)
                 set(sys_ver ${PKG_ARGS_VERSION})
             endif()
 
-            message(STATUS
-                "[CPMUtil] Using system package ${PKG_ARGS_NAME}@${sys_ver}")
+            message(STATUS "[CPMUtil] Using system package ${PKG_ARGS_NAME}@${sys_ver}")
 
-            CPMRegisterPackage(${PKG_ARGS_NAME} "${sys_ver}")
-
-            cpmutil_register_package(
-                ${PKG_ARGS_NAME}
-                ${pkg_git_url}
-                "${sys_ver} (system)")
-
+            cpmutil_register_package(${PKG_ARGS_NAME} ${pkg_git_url} "${sys_ver}")
+            cpmutil_mark_package_added(${PKG_ARGS_NAME} "" "" ON)
             set(${PKG_ARGS_NAME}_ADDED NO PARENT_SCOPE)
 
             return()
@@ -867,9 +1025,30 @@ function(AddPackage)
 
         if(force_system)
             string(REPLACE ";" " " str_find_args "${find_args}")
-            message(FATAL_ERROR "[CPMUtil] ${PKG_ARGS_NAME} not found via "
-                "find_package(${str_find_args})")
+            message(FATAL_ERROR "[CPMUtil] ${PKG_ARGS_NAME} not found via find_package(${str_find_args})")
         endif()
+    endif()
+
+    # check if package already added
+    if ("${PKG_ARGS_NAME}" IN_LIST CPMUTIL_PACKAGES)
+        set(prev_version "${CPMUTIL_PACKAGE_${PKG_ARGS_NAME}_VERSION}")
+
+        # check if newer ver was already requested
+        if(NOT "${prev_version}" STREQUAL "${PKG_ARGS_VERSION}"
+            AND prev_version MATCHES "^[0-9]"
+            AND PKG_ARGS_VERSION MATCHES "^[0-9]"
+            AND prev_version VERSION_LESS PKG_ARGS_VERSION)
+            message(WARNING "[CPMUtil] Requires a newer version of ${PKG_ARGS_NAME} "
+                "(${PKG_ARGS_VERSION}) than currently included (${prev_version}).")
+        endif()
+
+        set(${PKG_ARGS_NAME}_SOURCE_DIR
+            "${CPMUTIL_PACKAGE_${PKG_ARGS_NAME}_SOURCE_DIR}" PARENT_SCOPE)
+        set(${PKG_ARGS_NAME}_BINARY_DIR
+            "${CPMUTIL_PACKAGE_${PKG_ARGS_NAME}_BINARY_DIR}" PARENT_SCOPE)
+        set(${PKG_ARGS_NAME}_ADDED NO PARENT_SCOPE)
+
+        return()
     endif()
 
     # extra options
@@ -885,7 +1064,7 @@ function(AddPackage)
         list(APPEND EXTRA_ARGS DOWNLOAD_ONLY ON)
     endif()
 
-    cpm_utils_message(STATUS
+    cpm_util_message(STATUS
         "Using bundled package ${PKG_ARGS_NAME}@${PKG_ARGS_VERSION}")
 
     # Download/extract package
@@ -910,9 +1089,8 @@ function(AddPackage)
         set(source_dir "${${PKG_ARGS_NAME}_CUSTOM_DIR}")
     endif()
 
-    CPMAddPackage(
+    cpm_util_internal_add_package(
         NAME ${PKG_ARGS_NAME}
-        VERSION ${PKG_ARGS_VERSION}
         SOURCE_DIR ${source_dir}
 
         EXCLUDE_FROM_ALL ON
@@ -920,10 +1098,9 @@ function(AddPackage)
         ${EXTRA_ARGS}
         ${PKG_ARGS_UNPARSED_ARGUMENTS})
 
-    cpmutil_register_package(
-        ${PKG_ARGS_NAME}
-        ${pkg_git_url}
-        ${PKG_ARGS_VERSION})
+    cpmutil_register_package(${PKG_ARGS_NAME} ${pkg_git_url} ${PKG_ARGS_VERSION})
+    cpmutil_mark_package_added(${PKG_ARGS_NAME} "${${PKG_ARGS_NAME}_SOURCE_DIR}"
+        "${${PKG_ARGS_NAME}_BINARY_DIR}" OFF)
 
     set(${PKG_ARGS_NAME}_ADDED YES PARENT_SCOPE)
     Propagate(${PKG_ARGS_NAME}_SOURCE_DIR)
@@ -944,10 +1121,11 @@ function(AddCIPackage)
         REPO
         PACKAGE
         EXTENSION
+        MIN_VERSION
         GIT_HOST
-        PKGNAME)
+        HASHES)
 
-    set(multiValueArgs DISABLED_PLATFORMS)
+    set(multiValueArgs)
 
     set(optionArgs MODULE_PATH)
 
@@ -958,19 +1136,19 @@ function(AddCIPackage)
         ${ARGN})
 
     if(NOT DEFINED PKG_ARGS_VERSION)
-        cpm_utils_message(FATAL_ERROR "VERSION is required")
+        cpm_util_message(FATAL_ERROR "VERSION is required")
     endif()
 
     if(NOT DEFINED PKG_ARGS_NAME)
-        cpm_utils_message(FATAL_ERROR "NAME is required")
+        cpm_util_message(FATAL_ERROR "NAME is required")
     endif()
 
     if(NOT DEFINED PKG_ARGS_REPO)
-        cpm_utils_message(FATAL_ERROR "REPO is required")
+        cpm_util_message(FATAL_ERROR "REPO is required")
     endif()
 
     if(NOT DEFINED PKG_ARGS_PACKAGE)
-        cpm_utils_message(FATAL_ERROR "PACKAGE is required")
+        cpm_util_message(FATAL_ERROR "PACKAGE is required")
     endif()
 
     if(NOT DEFINED PKG_ARGS_EXTENSION)
@@ -985,114 +1163,15 @@ function(AddCIPackage)
         set(ARTIFACT_GIT_HOST "${PKG_ARGS_GIT_HOST}")
     endif()
 
-    if(DEFINED PKG_ARGS_DISABLED_PLATFORMS)
-        set(DISABLED_PLATFORMS ${PKG_ARGS_DISABLED_PLATFORMS})
-    endif()
-
     # this is mildly annoying
     set(ARTIFACT_VERSION ${PKG_ARGS_VERSION})
     set(ARTIFACT_NAME ${PKG_ARGS_NAME})
     set(ARTIFACT_REPO ${PKG_ARGS_REPO})
     set(ARTIFACT_PACKAGE ${PKG_ARGS_PACKAGE})
 
-    # plat/archname
-    if (DEFINED PKG_ARGS_PKGNAME)
-        set(pkgname ${PKG_ARGS_PKGNAME})
-    else()
-        if (MSVC)
-            set(platname windows)
-        elseif(MINGW)
-            set(platname mingw)
-        elseif(ANDROID)
-            set(platname android)
-        elseif(LINUX)
-            set(platname linux)
-        elseif(IOS)
-            set(platname ios)
-        elseif(APPLE)
-            set(platname macos)
-        else()
-            cpm_utils_message(WARNING
-                "Unsupported platform ${CMAKE_SYSTEM_NAME} for CI packages")
-        endif()
+    # TODO: Use amd64/aarch64 naming for everything.
+    # Also drop macos universal
 
-        if (CPMUTIL_AMD64)
-            set(archname amd64)
-        elseif(CPMUTIL_ARM64)
-            set(archname aarch64)
-        elseif(CPMUTIL_RISCV64)
-            set(archname riscv64)
-        endif()
-
-        if (APPLE AND NOT CPMUTIL_ARM64)
-            cpm_utils_message(WARNING
-                "Unsupported platform/arch combo for CI packages")
-        endif()
-
-        if (DEFINED platname AND DEFINED archname)
-            set(pkgname ${platname}-${archname})
-        endif()
-    endif()
-
-    if (DEFINED pkgname
-        AND NOT "${pkgname}" IN_LIST DISABLED_PLATFORMS)
-        set(ARTIFACT
-            "${ARTIFACT_NAME}-${pkgname}-${ARTIFACT_VERSION}.${ARTIFACT_EXT}")
-
-        if (PKG_ARGS_MODULE_PATH)
-            set(EXTRA_ARGS MODULE_PATH)
-        endif()
-
-        # download sha512sum file
-        # TODO: CI pkgs
-        set(sha512sum_url
-            "https://${ARTIFACT_GIT_HOST}/${ARTIFACT_REPO}/releases/download/${ARTIFACT_VERSION}/${ARTIFACT}.sha512sum")
-        set(sha512sum_file
-            "${CMAKE_CURRENT_BINARY_DIR}/.cpmutil_${ARTIFACT}_sha512sum")
-
-        file(DOWNLOAD "${sha512sum_url}" "${sha512sum_file}"
-            STATUS sha512sum_status)
-        list(GET sha512sum_status 0 sha512sum_error)
-
-        if(sha512sum_error)
-            message(FATAL_ERROR "[CPMUtil] Failed to download sha512sum "
-                "for ${ARTIFACT_NAME} from ${sha512sum_url}")
-        endif()
-
-        file(READ "${sha512sum_file}" sha512sum_hash)
-        string(STRIP "${sha512sum_hash}" sha512sum_hash)
-        file(REMOVE "${sha512sum_file}")
-
-        AddPackage(
-            NAME ${ARTIFACT_PACKAGE}
-            REPO ${ARTIFACT_REPO}
-            VERSION ${ARTIFACT_VERSION}
-            ARTIFACT ${ARTIFACT}
-            CUSTOM_KEY "${ARTIFACT_VERSION}-${pkgname}"
-            HASH ${sha512sum_hash}
-            FORCE_BUNDLED_PACKAGE ON
-            ${EXTRA_ARGS})
-
-        set(${ARTIFACT_PACKAGE}_ADDED TRUE PARENT_SCOPE)
-        Propagate(${ARTIFACT_PACKAGE}_SOURCE_DIR)
-        Propagate(CMAKE_PREFIX_PATH)
-    else()
-        cpm_utils_message(FATAL_ERROR "${ARTIFACT_NAME}:"
-            "Unsupported platform ${pkgname} for CI package")
-    endif()
-endfunction()
-
-# Utility function for Qt
-function(AddQt repo version)
-    if (NOT DEFINED repo)
-        message(FATAL_ERROR "[CPMUtil] AddQt: repo is required")
-    endif()
-
-    if (NOT DEFINED version)
-        message(FATAL_ERROR "[CPMUtil] AddQt: version is required")
-    endif()
-
-    # TODO: update Qt
     if (MSVC)
         set(platname windows)
     elseif(MINGW)
@@ -1106,41 +1185,50 @@ function(AddQt repo version)
     elseif(APPLE)
         set(platname macos)
     else()
-        cpm_utils_message(WARNING
+        cpm_util_message(WARNING
             "Unsupported platform ${CMAKE_SYSTEM_NAME} for CI packages")
     endif()
 
-    if (APPLE AND NOT IOS)
-        set(archname universal)
-    elseif((WIN32 OR LINUX) AND CPMUTIL_AMD64)
+    if (CPMUTIL_AMD64)
         set(archname amd64)
-    elseif(WIN32 AND CPMUTIL_ARM64)
-        set(archname arm64)
-    elseif((IOS OR LINUX OR ANDROID) AND CPMUTIL_ARM64)
+    elseif(CPMUTIL_ARM64)
         set(archname aarch64)
-    elseif(ANDROID AND CPMUTIL_AMD64)
-        set(archname x86_64)
-    else()
-        cpm_utils_message(WARNING
-            "Unsupported platform/arch combo for CI packages")
+    elseif(CPMUTIL_RISCV64)
+        set(archname riscv64)
     endif()
 
     if (DEFINED platname AND DEFINED archname)
         set(pkgname ${platname}-${archname})
     endif()
 
-    AddCIPackage(
-        NAME qt
-        PACKAGE Qt6
-        VERSION ${version}
-        REPO ${repo}
-        DISABLED_PLATFORMS
-            android-x86_64 android-aarch64
-        MODULE_PATH
-        PKGNAME ${pkgname})
+    if(DEFINED pkgname)
+        if (NOT "${PKG_ARGS_HASHES}" STREQUAL "")
+            string(JSON pkg_hash GET "${PKG_ARGS_HASHES}" "${pkgname}")
 
-    find_package(Qt6 REQUIRED PATHS ${Qt6_SOURCE_DIR} NO_DEFAULT_PATH)
+            if(NOT DEFINED pkg_hash OR pkg_hash STREQUAL "null")
+                message(FATAL_ERROR "CI package ${ARTIFACT_NAME} does not define a package for ${pkgname}.")
+            endif()
+        else()
+            message(FATAL_ERROR "CI package ${ARTIFACT_NAME} does not define a sha512sum hash map.")
+        endif()
 
-    Propagate(CMAKE_PREFIX_PATH)
-    Propagate(Qt6_SOURCE_DIR)
+        set(ARTIFACT "${ARTIFACT_NAME}-${pkgname}-${ARTIFACT_VERSION}.${ARTIFACT_EXT}")
+        AddPackage(
+            NAME ${ARTIFACT_PACKAGE}
+            REPO ${ARTIFACT_REPO}
+            VERSION ${ARTIFACT_VERSION}
+            ARTIFACT ${ARTIFACT}
+            CUSTOM_KEY "${ARTIFACT_VERSION}-${pkgname}"
+            HASH ${pkg_hash}
+            FORCE_BUNDLED_PACKAGE ON
+            ${EXTRA_ARGS})
+
+        set(${ARTIFACT_PACKAGE}_ADDED TRUE PARENT_SCOPE)
+        Propagate(${ARTIFACT_PACKAGE}_SOURCE_DIR)
+        Propagate(${ARTIFACT_PACKAGE}_BINARY_DIR)
+        Propagate(CMAKE_PREFIX_PATH)
+    else()
+        cpm_util_message(FATAL_ERROR "${ARTIFACT_NAME}:"
+            "Unsupported platform ${pkgname} for CI package")
+    endif()
 endfunction()

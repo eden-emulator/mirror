@@ -34,6 +34,7 @@ Package commands:
     update          	Check for updates for a package
     fetch           	Fetch a package and place it in the cache
     add             	Add a new package
+    add-qt             	Add a prebuilt Qt repository
     rm              	Remove a package
     version         	Change the version of a package
     which           	Check if a package is defined

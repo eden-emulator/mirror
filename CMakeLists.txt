@@ -583,7 +583,7 @@ endif()
 # Qt stuff
 if (ENABLE_QT)
     if (YUZU_USE_BUNDLED_QT)
-        AddQt(Eden-CI/Qt 6.11.1)
+        AddJsonPackage(NAME qt MODULE_PATH)
     else()
         message(STATUS "Using system Qt")
         if (NOT Qt6_DIR)

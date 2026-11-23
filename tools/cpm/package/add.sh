@@ -133,11 +133,6 @@ optional "Minimum required version" \
 
 MIN_VERSION="$reply"
 
-optional "Additional find_package arguments, space-separated" \
-	"Extra arguments passed to find_package(), (e.g. CONFIG)"
-
-FIND_ARGS="$reply"
-
 optional "Git host (default: github.com)" \
 	"The hostname of the Git server, if not GitHub (e.g. codeberg.org, git.crueter.xyz)"
 
@@ -159,6 +154,11 @@ if [ "$CI" = "false" ]; then
 
 	ARTIFACT="$reply"
 
+	optional "Additional find_package arguments, space-separated" \
+		"Extra arguments passed to find_package(), (e.g. CONFIG)"
+
+	FIND_ARGS="$reply"
+
 	multi "Fixed options, one per line (e.g. OPUS_BUILD_TESTING OFF)" \
 		"Fixed options passed to the project's CMakeLists.txt. Variadic options
 should be set in CMake with AddJsonPackage's OPTIONS parameter."
@@ -169,16 +169,6 @@ else
 		"CI artifacts are stored as <name>-<platform>-<version>.tar.zst. This option controls the name."
 
 	ARTIFACT="$reply"
-
-	multi "Platforms without a package (one per line)" \
-		"Valid platforms:
-windows-amd64 windows-arm64
-mingw-amd64 mingw-arm64
-android-aarch64 android-x86_64
-linux-amd64 linux-aarch64
-macos-universal ios-aarch64"
-
-	DISABLED_PLATFORMS="$reply"
 fi
 
 # invoke add.cmake for validation
@@ -194,7 +184,6 @@ set -- "$@" \
 [ -z "$FIND_ARGS" ] || set -- "$@" -DFIND_ARGS="$FIND_ARGS"
 [ -z "$OPTIONS" ] || set -- "$@" -DOPTIONS="$(echo "$OPTIONS" | tr '\n' ';')"
 [ -z "$ARTIFACT" ] || set -- "$@" -DARTIFACT="$ARTIFACT"
-[ -z "$DISABLED_PLATFORMS" ] || set -- "$@" -DDISABLED_PLATFORMS="$(echo "$DISABLED_PLATFORMS" | tr '\n' ';')"
 
 cmake "$@" -P "$CMAKE"/add.cmake
 

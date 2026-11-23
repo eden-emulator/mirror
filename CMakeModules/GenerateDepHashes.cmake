@@ -1,9 +1,20 @@
-# SPDX-FileCopyrightText: 2025 Eden Emulator Project
+# SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-get_property(NAMES GLOBAL PROPERTY CPM_PACKAGE_NAMES)
-get_property(SHAS GLOBAL PROPERTY CPM_PACKAGE_SHAS)
-get_property(URLS GLOBAL PROPERTY CPM_PACKAGE_URLS)
+foreach(pkg ${CPMUTIL_PACKAGES})
+    list(APPEND NAMES "${pkg}")
+
+    set(sys ${CPMUTIL_PACKAGE_${pkg}_SYSTEM})
+    set(url ${CPMUTIL_PACKAGE_${pkg}_URL})
+    set(version ${CPMUTIL_PACKAGE_${pkg}_VERSION})
+
+    if(sys)
+        set(version "${version} (system)")
+    endif()
+
+    list(APPEND VERSIONS "${version}")
+    list(APPEND URLS "${url}")
+endforeach()
 
 list(LENGTH NAMES DEPS_LENGTH)
 

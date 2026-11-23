@@ -16,6 +16,7 @@ Commands:
     update          	Check for updates for a package
     fetch           	Fetch a package and place it in the cache
     add             	Add a new package
+    add-qt             	Add a prebuilt Qt repository
     rm              	Remove a package
     version         	Change the version of a package
     which           	Check if a package is defined
@@ -71,7 +72,7 @@ while :; do
 		cmake $cmake_defines -P "$CMAKE/$cmd.cmake" -- $filtered
 		break
 		;;
-	add | patch)
+	add | patch | add-qt)
 		cmd="$1"
 		shift
 		"$SCRIPTS/$cmd".sh "$@"
