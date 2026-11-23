@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "core/hle/result.h"
+#include "common/result.h"
 #include "core/hle/service/mii/types/store_data.h"
 
 namespace Service::Mii {

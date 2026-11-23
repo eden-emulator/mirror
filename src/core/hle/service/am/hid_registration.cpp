@@ -9,7 +9,7 @@
 #include "core/hle/service/hid/hid_server.h"
 #include "core/hle/service/os/process.h"
 #include "core/hle/service/sm/sm.h"
-#include "hid_core/resource_manager.h"
+#include "core/hle/service/hid/resource_manager.h"
 
 namespace Service::AM {
 

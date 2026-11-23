@@ -24,7 +24,7 @@
 #include <qobjectdefs.h>
 
 #include "common/common_types.h"
-#include "core/frontend/emu_window.h"
+#include "common/frontend/emu_window.h"
 
 class MainWindow;
 class QCamera;

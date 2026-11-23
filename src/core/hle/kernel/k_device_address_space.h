@@ -11,7 +11,7 @@
 #include "core/hle/kernel/k_process_page_table.h"
 #include "core/hle/kernel/k_typed_address.h"
 #include "core/hle/kernel/slab_helpers.h"
-#include "core/hle/result.h"
+#include "common/result.h"
 
 namespace Kernel {
 

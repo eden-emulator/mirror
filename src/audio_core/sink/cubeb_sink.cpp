@@ -8,11 +8,11 @@
 #include <vector>
 
 #include "audio_core/common/common.h"
+#include "audio_core/host.h"
 #include "audio_core/sink/cubeb_sink.h"
 #include "audio_core/sink/sink_stream.h"
 #include "common/logging.h"
 #include "common/scope_exit.h"
-#include "core/core.h"
 
 #ifdef _WIN32
 #include <objbase.h>
@@ -40,7 +40,7 @@ public:
      */
     CubebSinkStream(cubeb* ctx_, u32 device_channels_, u32 system_channels_,
                     cubeb_devid output_device, cubeb_devid input_device, const std::string& name_,
-                    StreamType type_, Core::System& system_)
+                    StreamType type_, Host& system_)
         : SinkStream(system_, type_), ctx{ctx_} {
 #ifdef _WIN32
         CoInitializeEx(nullptr, COINIT_MULTITHREADED);
@@ -256,7 +256,7 @@ CubebSink::~CubebSink() {
 #endif
 }
 
-SinkStream* CubebSink::AcquireSinkStream(Core::System& system, u32 system_channels_,
+SinkStream* CubebSink::AcquireSinkStream(Host& system, u32 system_channels_,
                                          const std::string& name, StreamType type) {
     system_channels = system_channels_;
     SinkStreamPtr& stream = sink_streams.emplace_back(std::make_unique<CubebSinkStream>(

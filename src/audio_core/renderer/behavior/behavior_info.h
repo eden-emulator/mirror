@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: Copyright 2022 yuzu Emulator Project
@@ -11,7 +11,7 @@
 
 #include "audio_core/common/common.h"
 #include "common/common_types.h"
-#include "core/hle/service/audio/errors.h"
+#include "audio_core/errors.h"
 
 namespace AudioCore::Renderer {
 /**

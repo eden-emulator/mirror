@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2022 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -7,15 +10,12 @@
 #include <memory>
 #include <mutex>
 
+#include "audio_core/host.h"
 #include "common/polyfill_thread.h"
 
 #include "audio_core/common/common.h"
 #include "audio_core/renderer/system_manager.h"
-#include "core/hle/service/audio/errors.h"
-
-namespace Core {
-class System;
-}
+#include "audio_core/errors.h"
 
 namespace AudioCore {
 struct AudioRendererParameterInternal;
@@ -26,7 +26,7 @@ namespace Renderer {
  */
 class Manager {
 public:
-    explicit Manager(Core::System& system);
+    explicit Manager(Host& system);
     ~Manager();
 
     /**
@@ -90,7 +90,7 @@ public:
 
 private:
     /// Core system
-    Core::System& system;
+    Host& system;
     /// Session ids, -1 when in use
     std::array<s32, MaxRendererSessions> session_ids{};
     /// Number of active renderers

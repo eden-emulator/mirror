@@ -20,12 +20,12 @@
 #include "hid_core/hid_core.h"
 #include "hid_core/hid_result.h"
 #include "hid_core/hid_util.h"
-#include "hid_core/irsensor/clustering_processor.h"
-#include "hid_core/irsensor/image_transfer_processor.h"
-#include "hid_core/irsensor/ir_led_processor.h"
-#include "hid_core/irsensor/moment_processor.h"
-#include "hid_core/irsensor/pointing_processor.h"
-#include "hid_core/irsensor/tera_plugin_processor.h"
+#include "core/hle/service/hid/irsensor/clustering_processor.h"
+#include "core/hle/service/hid/irsensor/image_transfer_processor.h"
+#include "core/hle/service/hid/irsensor/ir_led_processor.h"
+#include "core/hle/service/hid/irsensor/moment_processor.h"
+#include "core/hle/service/hid/irsensor/pointing_processor.h"
+#include "core/hle/service/hid/irsensor/tera_plugin_processor.h"
 
 namespace Service::IRS {
 

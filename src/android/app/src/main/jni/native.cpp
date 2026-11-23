@@ -41,7 +41,7 @@ extern "C" {
 #include <libavcodec/jni.h>
 }
 
-#include "common/android/multiplayer/multiplayer.h"
+#include "jni/multiplayer/multiplayer.h"
 #include "common/android/android_common.h"
 #include "common/android/id_cache.h"
 #include "common/dynamic_library.h"
@@ -53,7 +53,7 @@ extern "C" {
 #include "common/settings.h"
 #include "common/string_util.h"
 #include "common/thread.h"
-#include "frontend_common/play_time_manager.h"
+#include "core/play_time_manager.h"
 #include "core/constants.h"
 #include "core/core.h"
 #include "core/cpu_manager.h"
@@ -77,7 +77,7 @@ extern "C" {
 #include "core/frontend/applets/profile_select.h"
 #include "core/frontend/applets/software_keyboard.h"
 #include "core/frontend/applets/web_browser.h"
-#include "common/android/applets/web_browser.h"
+#include "jni/applets/web_browser.h"
 #include "core/file_sys/common_funcs.h"
 #include "core/hle/service/am/applet_manager.h"
 #include "core/hle/service/am/frontend/applets.h"
@@ -103,6 +103,9 @@ extern "C" {
 #include "video_core/vulkan_common/vulkan_surface.h"
 #include "video_core/shader_notify.h"
 #include "network/announce_multiplayer_session.h"
+#ifdef ENABLE_WEB_SERVICE
+#include "web_service/announce_room_json.h"
+#endif
 
 #define jconst [[maybe_unused]] const auto
 #define jauto [[maybe_unused]] auto
@@ -1510,7 +1513,7 @@ jboolean Java_org_yuzu_yuzu_1emu_NativeLibrary_isFirmwareAvailable(JNIEnv* env, 
 }
 
 jstring Java_org_yuzu_yuzu_1emu_NativeLibrary_firmwareVersion(JNIEnv* env, jclass clazz) {
-    const auto pair = FirmwareManager::GetFirmwareVersion(EmulationSession::GetInstance().System());
+    const auto pair = Service::Set::GetInstalledFirmwareVersion(EmulationSession::GetInstance().System());
     const auto firmware_data = pair.first;
     const auto result = pair.second;
 
@@ -1772,7 +1775,22 @@ Java_org_yuzu_yuzu_1emu_NativeLibrary_initJvm(JNIEnv *env, jclass clazz) {
     if (env->GetJavaVM(&vm) != JNI_OK)
         return;
 
+    InitFFmpegOnLoad(vm);
     Common::Android::Initialize(vm, env);
+    Common::Android::SoftwareKeyboard::InitJNI(env);
+    Common::Android::WebBrowser::InitJNI(env);
+}
+
+extern "C" void JNI_OnUnload(JavaVM* vm, [[maybe_unused]] void* reserved) {
+    JNIEnv* env;
+    if (vm->GetEnv(reinterpret_cast<void**>(&env), JNI_VERSION_1_6) != JNI_OK) {
+        return;
+    }
+
+    Common::Android::Shutdown(env);
+    Common::Android::SoftwareKeyboard::CleanupJNI(env);
+    Common::Android::WebBrowser::CleanupJNI(env);
+    AndroidMultiplayer::NetworkShutdown();
 }
 
 JNIEXPORT void JNICALL
@@ -1782,7 +1800,12 @@ Java_org_yuzu_yuzu_1emu_NativeLibrary_initMultiplayer(
         return;
     }
 
+#ifdef ENABLE_WEB_SERVICE
+    announce_multiplayer_session = std::make_shared<Core::AnnounceMultiplayerSession>(
+        &WebService::MakeRoomJsonBackend);
+#else
     announce_multiplayer_session = std::make_shared<Core::AnnounceMultiplayerSession>();
+#endif
 
     multiplayer = std::make_unique<AndroidMultiplayer>(s_instance.System(), announce_multiplayer_session);
     multiplayer->NetworkInit();

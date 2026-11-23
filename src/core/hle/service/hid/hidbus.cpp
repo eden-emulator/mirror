@@ -18,9 +18,9 @@
 #include "core/hle/service/service.h"
 #include "core/memory.h"
 #include "hid_core/hid_types.h"
-#include "hid_core/hidbus/ringcon.h"
-#include "hid_core/hidbus/starlink.h"
-#include "hid_core/hidbus/stubbed.h"
+#include "core/hle/service/hid/hidbus/ringcon.h"
+#include "core/hle/service/hid/hidbus/starlink.h"
+#include "core/hle/service/hid/hidbus/stubbed.h"
 
 namespace Service::HID {
 // (15ms, 66Hz)

@@ -78,6 +78,8 @@ add_library(video_core STATIC
     host1x/control.cpp
     host1x/control.h
     host1x/gpu_device_memory_manager.cpp
+    host1x/device_memory_manager.h
+    host1x/device_memory_manager.inc
     host1x/gpu_device_memory_manager.h
     host1x/host1x.cpp
     host1x/host1x.h
@@ -93,6 +95,7 @@ add_library(video_core STATIC
     fence_manager.h
     gpu.cpp
     gpu.h
+    host.h
     gpu_thread.cpp
     gpu_thread.h
     guest_memory.h
@@ -405,7 +408,7 @@ if (ENABLE_OPENGL)
     )
 endif()
 
-target_link_libraries(video_core PUBLIC common core)
+target_link_libraries(video_core PUBLIC common)
 target_link_libraries(video_core PUBLIC shader_recompiler stb bc_decoder gpu_logging)
 if (ENABLE_OPENGL)
     target_link_libraries(video_core PUBLIC glad)

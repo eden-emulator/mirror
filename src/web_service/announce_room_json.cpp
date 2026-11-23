@@ -5,6 +5,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/logging.h"
+#include "common/settings.h"
 #include "web_service/announce_room_json.h"
 #include "web_service/web_backend.h"
 
@@ -130,6 +131,11 @@ void RoomJson::Delete() {
             client.DeleteJson(std::format("/lobby/{}", room_id), "");
         });
     }
+}
+
+std::unique_ptr<AnnounceMultiplayerRoom::Backend> MakeRoomJsonBackend() {
+    return std::make_unique<RoomJson>(Settings::values.web_api_url.GetValue(),
+                                      Settings::values.eden_username.GetValue());
 }
 
 } // namespace WebService

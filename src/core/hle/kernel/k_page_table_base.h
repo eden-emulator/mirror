@@ -20,7 +20,7 @@
 #include "core/hle/kernel/k_memory_manager.h"
 #include "core/hle/kernel/k_typed_address.h"
 #include "core/hle/kernel/kernel.h"
-#include "core/hle/result.h"
+#include "common/result.h"
 #include "core/memory.h"
 
 namespace Kernel {

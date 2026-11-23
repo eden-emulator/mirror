@@ -19,7 +19,7 @@
 
 #include "common/common_types.h"
 #include "core/core.h"
-#include "frontend_common/play_time_manager.h"
+#include "core/play_time_manager.h"
 #include "qt_common/config/uisettings.h"
 #include "qt_common/game_list/model.h"
 #include "qt_common/util/game.h"

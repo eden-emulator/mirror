@@ -39,7 +39,7 @@
 #include "core/hle/kernel/svc.h"
 #include "core/hle/kernel/svc_results.h"
 #include "core/hle/kernel/svc_types.h"
-#include "core/hle/result.h"
+#include "common/result.h"
 #include "core/memory.h"
 
 namespace {

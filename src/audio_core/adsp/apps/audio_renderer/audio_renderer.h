@@ -13,13 +13,10 @@
 #include "audio_core/adsp/apps/audio_renderer/command_buffer.h"
 #include "audio_core/adsp/apps/audio_renderer/command_list_processor.h"
 #include "audio_core/adsp/mailbox.h"
+#include "audio_core/host.h"
 #include "common/common_types.h"
 #include "common/polyfill_thread.h"
 #include "common/thread.h"
-
-namespace Core {
-class System;
-} // namespace Core
 
 namespace Kernel {
 class KProcess;
@@ -53,7 +50,7 @@ enum Message : u32 {
  */
 class AudioRenderer {
 public:
-    explicit AudioRenderer(Core::System& system, Sink::Sink& sink);
+    explicit AudioRenderer(Host& system, Sink::Sink& sink);
     ~AudioRenderer();
 
     /**
@@ -95,7 +92,7 @@ private:
     void PostDSPClearCommandBuffer() noexcept;
 
     /// Core system
-    Core::System& system;
+    Host& system;
     /// The output sink the AudioRenderer will send samples to
     Sink::Sink& sink;
     /// The active mailbox

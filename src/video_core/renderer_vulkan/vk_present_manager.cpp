@@ -6,7 +6,7 @@
 
 #include "common/settings.h"
 #include "common/thread.h"
-#include "core/frontend/emu_window.h"
+#include "common/frontend/emu_window.h"
 #ifdef HAS_LSFG
 #include "video_core/renderer_vulkan/present/lsfg_common.h"
 #endif

@@ -10,7 +10,7 @@
 #include <vector>
 #include "common/common_types.h"
 #include "common/socket_types.h"
-#include "web_service/web_result.h"
+#include "common/web_result.h"
 
 namespace AnnounceMultiplayerRoom {
 

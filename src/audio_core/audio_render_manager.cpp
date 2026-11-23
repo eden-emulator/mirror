@@ -7,11 +7,11 @@
 #include "audio_core/audio_render_manager.h"
 #include "audio_core/common/audio_renderer_parameter.h"
 #include "audio_core/common/feature_support.h"
-#include "core/core.h"
+#include "audio_core/host.h"
 
 namespace AudioCore::Renderer {
 
-Manager::Manager(Core::System& system_)
+Manager::Manager(Host& system_)
     : system{system_}
     , system_manager{std::make_unique<SystemManager>(system)}
 {

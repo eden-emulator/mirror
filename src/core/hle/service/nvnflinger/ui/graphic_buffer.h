@@ -13,7 +13,7 @@
 
 #include "common/common_funcs.h"
 #include "common/common_types.h"
-#include "core/hle/service/nvnflinger/pixel_format.h"
+#include "common/nvnflinger/pixel_format.h"
 
 namespace Service::Nvidia::NvCore {
 class NvMap;

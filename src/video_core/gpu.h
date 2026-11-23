@@ -10,14 +10,11 @@
 
 #include "common/bit_field.h"
 #include "common/common_types.h"
-#include "core/hle/service/nvdrv/nvdata.h"
+#include "common/nvnflinger/nvdata.h"
 #include "video_core/cdma_pusher.h"
 #include "video_core/framebuffer_config.h"
+#include "video_core/host.h"
 #include "video_core/rasterizer_download_area.h"
-
-namespace Core {
-class System;
-} // namespace Core
 
 namespace VideoCore {
 class RendererBase;
@@ -137,7 +134,7 @@ class MemoryManager;
 
 class GPU final {
 public:
-    explicit GPU(Core::System& system, bool is_async, bool use_nvdec);
+    explicit GPU(VideoCore::Host& system, bool is_async, bool use_nvdec);
     ~GPU();
 
     /// Binds a renderer to the GPU.

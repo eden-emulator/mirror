@@ -8,21 +8,18 @@
 #include "audio_core/audio_manager.h"
 #include "audio_core/device/audio_buffer.h"
 #include "audio_core/device/device_session.h"
+#include "audio_core/host.h"
 #include "audio_core/sink/sink_stream.h"
-#include "core/core.h"
-#include "core/core_timing.h"
-#include "core/guest_memory.h"
-#include "core/memory.h"
+#include "common/guest_memory_access.h"
 
-#include "core/hle/kernel/k_process.h"
 
 namespace AudioCore {
 
 using namespace std::literals;
 constexpr auto INCREMENT_TIME{5ms};
 
-DeviceSession::DeviceSession(Core::System& system_)
-    : system{system_}, thread_event{Core::Timing::CreateEvent(
+DeviceSession::DeviceSession(Host& system_)
+    : system{system_}, thread_event{system_.CreateTimingEvent(
                            "AudioOutSampleTick",
                            [this](s64 time, std::chrono::nanoseconds) { return ThreadFunc(); })} {}
 
@@ -42,7 +39,7 @@ Result DeviceSession::Initialize(std::string_view name_, SampleFormat sample_for
     channel_count = channel_count_;
     session_id = session_id_;
     handle = handle_;
-    handle->Open(system.Kernel());
+    system.OpenProcess(*handle);
     applet_resource_user_id = applet_resource_user_id_;
 
     if (type == Sink::StreamType::In) {
@@ -63,7 +60,7 @@ void DeviceSession::Finalize() {
     }
 
     if (handle) {
-        handle->Close(system.Kernel());
+        system.CloseProcess(*handle);
         handle = nullptr;
     }
 }
@@ -71,15 +68,14 @@ void DeviceSession::Finalize() {
 void DeviceSession::Start() {
     if (stream) {
         stream->Start();
-        system.CoreTiming().ScheduleLoopingEvent(std::chrono::nanoseconds::zero(), INCREMENT_TIME,
-                                                 thread_event);
+        system.ScheduleLoopingEvent(std::chrono::nanoseconds::zero(), INCREMENT_TIME, thread_event);
     }
 }
 
 void DeviceSession::Stop() {
     if (stream) {
         stream->Stop();
-        system.CoreTiming().UnscheduleEvent(thread_event, {});
+        system.UnscheduleEvent(thread_event);
     }
 }
 
@@ -102,8 +98,8 @@ void DeviceSession::AppendBuffers(std::span<const AudioBuffer> buffers) {
         if (type == Sink::StreamType::In) {
             stream->AppendBuffer(new_buffer, tmp_samples);
         } else {
-            Core::Memory::CpuGuestMemory<s16, Core::Memory::GuestMemoryFlags::UnsafeRead> samples(
-                handle->GetMemory(), buffer.samples, buffer.size / sizeof(s16));
+            Core::Memory::GuestAccessMemory<s16, Core::Memory::GuestMemoryFlags::UnsafeRead> samples(
+                system.ProcessMemory(*handle), buffer.samples, buffer.size / sizeof(s16));
             stream->AppendBuffer(new_buffer, samples);
         }
     }
@@ -112,7 +108,7 @@ void DeviceSession::AppendBuffers(std::span<const AudioBuffer> buffers) {
 void DeviceSession::ReleaseBuffer(const AudioBuffer& buffer) const {
     if (type == Sink::StreamType::In) {
         auto samples{stream->ReleaseBuffer(buffer.size / sizeof(s16))};
-        handle->GetMemory().WriteBlockUnsafe(buffer.samples, samples.data(), buffer.size);
+        system.ProcessMemory(*handle).WriteBlockUnsafe(buffer.samples, samples.data(), buffer.size);
     }
 }
 

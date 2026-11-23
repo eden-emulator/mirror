@@ -15,7 +15,7 @@
 #include "common/literals.h"
 
 #include "core/file_sys/vfs/vfs.h"
-#include "core/hle/result.h"
+#include "common/result.h"
 
 namespace FileSys {
 

@@ -14,6 +14,7 @@
 #include "audio_core/common/common.h"
 #include "audio_core/common/feature_support.h"
 #include "audio_core/common/workbuffer_allocator.h"
+#include "audio_core/host.h"
 #include "audio_core/renderer/behavior/info_updater.h"
 #include "audio_core/renderer/command/command_buffer.h"
 #include "audio_core/renderer/command/command_generator.h"
@@ -32,12 +33,7 @@
 #include "audio_core/renderer/voice/voice_info.h"
 #include "audio_core/renderer/voice/voice_state.h"
 #include "common/alignment.h"
-#include "core/core.h"
-#include "core/core_timing.h"
-#include "core/hle/kernel/k_event.h"
-#include "core/hle/kernel/k_process.h"
-#include "core/hle/kernel/k_transfer_memory.h"
-#include "core/memory.h"
+#include "common/guest_memory_access.h"
 
 namespace AudioCore::Renderer {
 
@@ -99,7 +95,7 @@ u64 System::GetWorkBufferSize(const AudioRendererParameterInternal& params) {
     return size;
 }
 
-System::System(Core::System& core_, Kernel::KEvent* adsp_rendered_event_)
+System::System(Host& core_, Kernel::KEvent* adsp_rendered_event_)
     : core{core_}, audio_renderer{core.AudioCore().ADSP().AudioRenderer()},
       adsp_rendered_event{adsp_rendered_event_} {}
 
@@ -134,7 +130,7 @@ Result System::Initialize(const AudioRendererParameterInternal& params,
     render_device = params.rendering_device;
     execution_mode = params.execution_mode;
 
-    process_handle->GetMemory().ZeroBlock(transfer_memory->GetSourceAddress(),
+    core.ProcessMemory(*process_handle).ZeroBlock(core.TransferMemoryAddress(*transfer_memory),
                                           transfer_memory_size);
 
     // Note: We're not actually using the transfer memory because it's a pain to code for.
@@ -451,7 +447,7 @@ void System::Stop() {
 Result System::Update(std::span<const u8> input, std::span<u8> performance, std::span<u8> output) {
     std::scoped_lock l{lock};
 
-    const auto start_time{core.CoreTiming().GetGlobalTimeNs().count()};
+    const auto start_time{core.GlobalTimeNs().count()};
     std::memset(output.data(), 0, output.size());
 
     InfoUpdater info_updater(input, output, process_handle, behavior);
@@ -540,10 +536,10 @@ Result System::Update(std::span<const u8> input, std::span<u8> performance, std:
         return result;
     }
 
-    adsp_rendered_event->Clear(core.Kernel());
+    core.ClearEvent(*adsp_rendered_event);
     num_times_updated++;
 
-    const auto end_time{core.CoreTiming().GetGlobalTimeNs().count()};
+    const auto end_time{core.GlobalTimeNs().count()};
     ticks_spent_updating += end_time - start_time;
 
     return ResultSuccess;
@@ -624,7 +620,7 @@ void System::SendCommandToDsp() {
             reset_command_buffers = false;
             command_buffer_size = command_size;
             if (remaining_command_count == 0) {
-                adsp_rendered_event->Signal(core.Kernel());
+                core.SignalEvent(*adsp_rendered_event);
             }
         } else {
             audio_renderer.ClearRemainCommandCount(session_id);
@@ -636,7 +632,7 @@ void System::SendCommandToDsp() {
 u64 System::GenerateCommand(std::span<u8> in_command_buffer,
                             [[maybe_unused]] u64 command_buffer_size_) {
     PoolMapper::ClearUseState(memory_pool_workbuffer, memory_pool_count);
-    const auto start_time{core.CoreTiming().GetGlobalTimeNs().count()};
+    const auto start_time{core.GlobalTimeNs().count()};
 
     auto command_list_header{reinterpret_cast<CommandListHeader*>(in_command_buffer.data())};
 
@@ -735,7 +731,7 @@ u64 System::GenerateCommand(std::span<u8> in_command_buffer,
         effect_context.UpdateStateByDspShared();
     }
 
-    const auto end_time{core.CoreTiming().GetGlobalTimeNs().count()};
+    const auto end_time{core.GlobalTimeNs().count()};
     total_ticks_elapsed += end_time - start_time;
     num_command_lists_generated++;
     render_start_tick = audio_renderer.GetRenderingStartTick(session_id);

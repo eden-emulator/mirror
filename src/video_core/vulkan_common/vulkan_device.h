@@ -16,7 +16,6 @@
 
 #include "common/common_types.h"
 #include "common/logging.h"
-#include "common/settings.h"
 #include "video_core/vulkan_common/vulkan_wrapper.h"
 
 VK_DEFINE_HANDLE(VmaAllocator)

@@ -18,7 +18,9 @@
 #include "common/common_types.h"
 #include "core/file_sys/vfs/vfs_types.h"
 #include "core/hle/service/os/event.h"
+#include "audio_core/host.h"
 #include "core/hle/service/kernel_helpers.h"
+#include "video_core/host.h"
 
 namespace Core::Frontend {
 class EmuWindow;
@@ -142,7 +144,7 @@ enum class SystemResultStatus : u32 {
     ErrorLoader,         ///< The base for loader errors (too many to repeat)
 };
 
-class System {
+class System final : public ::AudioCore::Host, public VideoCore::Host {
 public:
     using CurrentBuildProcessID = std::array<u8, 0x20>;
 
@@ -175,13 +177,13 @@ public:
     void Pause();
 
     /// Check if the core is currently paused.
-    [[nodiscard]] bool IsPaused() const;
+    [[nodiscard]] bool IsPaused() const override;
 
     /// Shutdown the main emulated process.
     void ShutdownMainProcess();
 
     /// Check if the core is shutting down.
-    [[nodiscard]] bool IsShuttingDown() const;
+    [[nodiscard]] bool IsShuttingDown() const override;
 
     /// Set the shutting down state.
     void SetShuttingDown(bool shutting_down);
@@ -217,14 +219,14 @@ public:
      * application).
      * @returns True if the emulated system is powered on, otherwise false.
      */
-    [[nodiscard]] bool IsPoweredOn() const;
+    [[nodiscard]] bool IsPoweredOn() const override;
 
     /// Prepare the core emulation for a reschedule
     void PrepareReschedule(u32 core_index);
 
     std::span<GPUDirtyMemoryManager> GetGPUDirtyMemoryManager();
 
-    void GatherGPUDirtyMemory(std::function<void(PAddr, size_t)>& callback);
+    void GatherGPUDirtyMemory(std::function<void(PAddr, size_t)>& callback) override;
 
     [[nodiscard]] size_t GetCurrentHostThreadID() const;
 
@@ -250,13 +252,13 @@ public:
     [[nodiscard]] const Core::Memory::Memory& ApplicationMemory() const;
 
     /// Gets a mutable reference to the GPU interface
-    [[nodiscard]] Tegra::GPU& GPU();
+    [[nodiscard]] Tegra::GPU& GPU() override;
 
     /// Gets an immutable reference to the GPU interface.
     [[nodiscard]] const Tegra::GPU& GPU() const;
 
     /// Gets a mutable reference to the Host1x interface
-    [[nodiscard]] Tegra::Host1x::Host1x& Host1x();
+    [[nodiscard]] Tegra::Host1x::Host1x& Host1x() override;
 
     /// Gets an immutable reference to the Host1x interface.
     [[nodiscard]] const Tegra::Host1x::Host1x& Host1x() const;
@@ -268,7 +270,7 @@ public:
     [[nodiscard]] const VideoCore::RendererBase& Renderer() const;
 
     /// Gets a mutable reference to the audio interface
-    [[nodiscard]] AudioCore::AudioCore& AudioCore();
+    [[nodiscard]] AudioCore::AudioCore& AudioCore() override;
 
     /// Gets an immutable reference to the audio interface.
     [[nodiscard]] const AudioCore::AudioCore& AudioCore() const;
@@ -401,7 +403,28 @@ public:
     void RegisterCoreThread(std::size_t id);
 
     /// Register a host thread as an auxiliary thread.
-    void RegisterHostThread();
+    void RegisterHostThread() override;
+
+    [[nodiscard]] u64 GPUTicks() override;
+
+    [[nodiscard]] std::chrono::nanoseconds GlobalTimeNs() override;
+    [[nodiscard]] std::chrono::microseconds GlobalTimeUs() override;
+    [[nodiscard]] std::shared_ptr<Timing::EventType> CreateTimingEvent(
+        std::string name, TimedCallback&& callback) override;
+    void ScheduleLoopingEvent(std::chrono::nanoseconds start_time,
+                              std::chrono::nanoseconds resched_time,
+                              const std::shared_ptr<Timing::EventType>& event) override;
+    void UnscheduleEvent(const std::shared_ptr<Timing::EventType>& event) override;
+    void SignalEvent(Kernel::KEvent& event) override;
+    void ClearEvent(Kernel::KEvent& event) override;
+    void OpenProcess(Kernel::KProcess& process) override;
+    void CloseProcess(Kernel::KProcess& process) override;
+    [[nodiscard]] Memory::GuestMemoryAccess& ProcessMemory(Kernel::KProcess& process) override;
+    [[nodiscard]] Common::ProcessAddress TransferMemoryAddress(
+        Kernel::KTransferMemory& transfer_memory) override;
+    [[nodiscard]] const u8* DeviceMemoryBase() override;
+    [[nodiscard]] Core::Memory::GuestMemoryAccess& ApplicationGuestMemory() override;
+    void EndGameFrame() override;
 
     /// Tells if system is running on multicore.
     [[nodiscard]] bool IsMulticore() const;

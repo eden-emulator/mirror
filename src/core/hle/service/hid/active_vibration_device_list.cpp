@@ -9,8 +9,8 @@
 #include "core/hle/service/hid/active_vibration_device_list.h"
 #include "hid_core/hid_result.h"
 #include "hid_core/hid_util.h"
-#include "hid_core/resource_manager.h"
-#include "hid_core/resources/vibration/vibration_device.h"
+#include "core/hle/service/hid/resource_manager.h"
+#include "core/hle/service/hid/resources/vibration/vibration_device.h"
 
 namespace Service::HID {
 

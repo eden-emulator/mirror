@@ -12,7 +12,7 @@
 #include "core/hle/service/kernel_helpers.h"
 #include "core/hle/service/service.h"
 #include "hid_core/hid_types.h"
-#include "hid_core/hidbus/hidbus_base.h"
+#include "core/hle/service/hid/hidbus/hidbus_base.h"
 
 namespace Core::Timing {
 struct EventType;

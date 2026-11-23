@@ -29,10 +29,6 @@
 #include "video_core/vulkan_common/vulkan_memory_allocator.h"
 #include "video_core/vulkan_common/vulkan_wrapper.h"
 
-namespace Core {
-class System;
-}
-
 namespace Core::Frontend {
 class EmuWindow;
 }

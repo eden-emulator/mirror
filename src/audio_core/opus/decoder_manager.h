@@ -1,22 +1,22 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2023 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
 
+#include "audio_core/host.h"
 #include "audio_core/opus/hardware_opus.h"
 #include "audio_core/opus/parameters.h"
 #include "common/common_types.h"
-#include "core/hle/service/audio/errors.h"
-
-namespace Core {
-class System;
-}
+#include "audio_core/errors.h"
 
 namespace AudioCore::OpusDecoder {
 
 class OpusDecoderManager {
 public:
-    OpusDecoderManager(Core::System& system);
+    OpusDecoderManager(Host& system);
 
     HardwareOpus& GetHardwareOpus() {
         return hardware_opus;
@@ -32,7 +32,7 @@ public:
                                                u32& out_size);
 
 private:
-    Core::System& system;
+    Host& system;
     HardwareOpus hardware_opus;
     std::array<u32, MaxChannels> required_workbuffer_sizes{};
 };

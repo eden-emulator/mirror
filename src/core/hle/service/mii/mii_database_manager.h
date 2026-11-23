@@ -7,7 +7,7 @@
 #pragma once
 
 #include "common/fs/fs.h"
-#include "core/hle/result.h"
+#include "common/result.h"
 #include "core/hle/service/mii/mii_database.h"
 
 namespace Service::Mii {

@@ -16,7 +16,7 @@
 #include "core/hle/kernel/k_process.h"
 #include "core/hle/kernel/k_resource_limit.h"
 #include "core/hle/kernel/k_session.h"
-#include "core/hle/result.h"
+#include "common/result.h"
 #include "core/hle/service/hle_ipc.h"
 #include "core/hle/service/server_manager.h"
 

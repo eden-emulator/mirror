@@ -9,7 +9,7 @@
 #include <QTimer>
 #include "common/param_package.h"
 #include "common/settings.h"
-#include "core/frontend/framebuffer_layout.h"
+#include "common/frontend/framebuffer_layout.h"
 #include "input_common/main.h"
 #include "ui_configure_touch_from_button.h"
 #include "yuzu/configuration/configure_touch_from_button.h"

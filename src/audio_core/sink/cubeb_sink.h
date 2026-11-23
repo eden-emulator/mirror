@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: Copyright 2018 yuzu Emulator Project
@@ -11,11 +11,8 @@
 
 #include <cubeb/cubeb.h>
 
+#include "audio_core/host.h"
 #include "audio_core/sink/sink.h"
-
-namespace Core {
-class System;
-}
 
 namespace AudioCore::Sink {
 class SinkStream;
@@ -40,7 +37,7 @@ public:
      *
      * @return A pointer to the created SinkStream
      */
-    SinkStream* AcquireSinkStream(Core::System& system, u32 system_channels,
+    SinkStream* AcquireSinkStream(Host& system, u32 system_channels,
                                   const std::string& name, StreamType type) override;
 
     /**

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2022 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -6,11 +9,8 @@
 #include <array>
 #include <mutex>
 
+#include "audio_core/host.h"
 #include "audio_core/renderer/audio_device.h"
-
-namespace Core {
-class System;
-}
 
 namespace AudioCore::AudioOut {
 class Out;
@@ -21,7 +21,7 @@ constexpr size_t MaxOutSessions = 12;
  */
 class Manager {
 public:
-    explicit Manager(Core::System& system);
+    explicit Manager(Host& system);
 
     /**
      * Acquire a free session id for opening a new audio out.
@@ -64,7 +64,7 @@ public:
     u32 GetAudioOutDeviceNames(std::vector<Renderer::AudioDevice::AudioDeviceName>& names) const;
 
     /// Core system
-    Core::System& system;
+    Host& system;
     /// Array of session ids
     std::array<size_t, MaxOutSessions> session_ids{};
     /// Array of resource user ids

@@ -12,7 +12,7 @@
 #include "core/hle/kernel/k_client_port.h"
 #include "core/hle/kernel/k_server_port.h"
 #include "core/hle/kernel/slab_helpers.h"
-#include "core/hle/result.h"
+#include "common/result.h"
 
 namespace Kernel {
 

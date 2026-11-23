@@ -9,7 +9,7 @@
 #include "core/hle/kernel/k_light_client_session.h"
 #include "core/hle/kernel/k_light_server_session.h"
 #include "core/hle/kernel/slab_helpers.h"
-#include "core/hle/result.h"
+#include "common/result.h"
 
 namespace Kernel {
 

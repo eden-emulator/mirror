@@ -13,7 +13,7 @@
 
 #include "common/polyfill_thread.h"
 #include "common/thread.h"
-#include "core/hle/result.h"
+#include "common/result.h"
 #include "core/hle/service/hle_ipc.h"
 #include "core/hle/service/os/multi_wait.h"
 #include "core/hle/service/os/mutex.h"

@@ -15,7 +15,7 @@
 #include "common/vector_math.h"
 #include "core/hle/service/set/setting_formats/private_settings.h"
 #include "core/hle/service/set/settings_types.h"
-#include "hid_core/resources/touch_screen/touch_types.h"
+#include "core/hle/service/hid/resources/touch_screen/touch_types.h"
 
 namespace Service::Set {
 

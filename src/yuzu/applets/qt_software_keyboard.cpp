@@ -12,7 +12,7 @@
 #include "common/string_util.h"
 #include "core/core.h"
 #include "hid_core/frontend/emulated_controller.h"
-#include "hid_core/frontend/input_interpreter.h"
+#include "core/hle/service/hid/input_interpreter.h"
 #include "hid_core/hid_core.h"
 #include "hid_core/hid_types.h"
 #include "ui_qt_software_keyboard.h"

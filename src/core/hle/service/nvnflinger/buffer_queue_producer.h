@@ -15,12 +15,12 @@
 
 #include "common/common_funcs.h"
 #include "common/cpu_features.h"
-#include "core/hle/service/nvdrv/nvdata.h"
+#include "common/nvnflinger/nvdata.h"
 #include "core/hle/service/nvnflinger/binder.h"
 #include "core/hle/service/nvnflinger/buffer_queue_defs.h"
 #include "core/hle/service/nvnflinger/buffer_slot.h"
 #include "core/hle/service/nvnflinger/graphic_buffer_producer.h"
-#include "core/hle/service/nvnflinger/pixel_format.h"
+#include "common/nvnflinger/pixel_format.h"
 #include "core/hle/service/nvnflinger/status.h"
 #include "core/hle/service/nvnflinger/window.h"
 

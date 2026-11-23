@@ -8,7 +8,7 @@
 
 #include <span>
 
-#include "core/hle/result.h"
+#include "common/result.h"
 #include "core/hle/service/mii/mii_database_manager.h"
 #include "core/hle/service/mii/mii_types.h"
 

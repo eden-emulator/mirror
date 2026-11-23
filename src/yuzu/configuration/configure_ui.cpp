@@ -23,7 +23,7 @@
 #include "common/settings.h"
 #include "common/settings_enums.h"
 #include "core/core.h"
-#include "core/frontend/framebuffer_layout.h"
+#include "common/frontend/framebuffer_layout.h"
 #include "ui_configure_ui.h"
 
 #include "qt_common/config/uisettings.h"

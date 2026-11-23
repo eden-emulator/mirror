@@ -16,7 +16,7 @@
 #include "hid_core/frontend/emulated_controller.h"
 #include "hid_core/hid_core.h"
 #include "hid_core/hid_types.h"
-#include "hid_core/resources/npad/npad.h"
+#include "core/hle/service/hid/resources/npad/npad.h"
 #include "qt_common/qt_compat.h"
 #include "ui_qt_controller.h"
 #include "yuzu/applets/qt_controller.h"

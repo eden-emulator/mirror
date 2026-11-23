@@ -9,11 +9,10 @@ add_library(web_service STATIC
     announce_room_json.h
     web_backend.cpp
     web_backend.h
-    web_result.h
 )
 
 create_target_directory_groups(web_service)
-target_link_libraries(web_service PRIVATE common network hydro::carbon jacinth::jacinth)
+target_link_libraries(web_service PRIVATE common hydro::carbon jacinth::jacinth)
 
 find_package(OpenSSL REQUIRED)
 target_link_libraries(web_service PRIVATE OpenSSL::SSL OpenSSL::Crypto)

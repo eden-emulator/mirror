@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2022 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -5,11 +8,8 @@
 
 #include <mutex>
 
+#include "audio_core/host.h"
 #include "audio_core/out/audio_out_system.h"
-
-namespace Core {
-class System;
-}
 
 namespace Kernel {
 class KEvent;
@@ -25,7 +25,7 @@ class Manager;
  */
 class Out {
 public:
-    explicit Out(Core::System& system, Manager& manager, Kernel::KEvent* event, size_t session_id);
+    explicit Out(Host& system, Manager& manager, Kernel::KEvent* event, size_t session_id);
 
     /**
      * Free this audio out from the audio out manager.
@@ -95,7 +95,7 @@ public:
      * filled.
      * @return The buffer event.
      */
-    Kernel::KReadableEvent& GetBufferEvent();
+    Kernel::KEvent& GetBufferEvent();
 
     /**
      * Get the current system volume.

@@ -22,8 +22,10 @@ add_library(audio_core STATIC
     adsp/apps/opus/shared_memory.h
     audio_core.cpp
     audio_core.h
+    host.h
     audio_event.h
     audio_event.cpp
+    errors.h
     audio_render_manager.cpp
     audio_render_manager.h
     audio_in_manager.cpp
@@ -227,7 +229,7 @@ else()
 endif()
 
 target_include_directories(audio_core PRIVATE ${OPUS_INCLUDE_DIRS})
-target_link_libraries(audio_core PUBLIC common core Opus::opus)
+target_link_libraries(audio_core PUBLIC common Opus::opus)
 
 if (ENABLE_CUBEB)
     target_sources(audio_core PRIVATE

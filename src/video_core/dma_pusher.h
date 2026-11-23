@@ -18,10 +18,7 @@
 #include "common/scratch_buffer.h"
 #include "video_core/engines/engine_interface.h"
 #include "video_core/engines/puller.h"
-
-namespace Core {
-class System;
-}
+#include "video_core/host.h"
 
 namespace Tegra {
 
@@ -123,7 +120,7 @@ struct CommandList final {
 /// details on this implementation.
 class DmaPusher final {
 public:
-    explicit DmaPusher(Core::System& system_, MemoryManager& memory_manager_, Control::ChannelState& channel_state_);
+    explicit DmaPusher(VideoCore::Host& system_, MemoryManager& memory_manager_, Control::ChannelState& channel_state_);
     ~DmaPusher();
 
     void Push(CommandList&& entries) {
@@ -167,7 +164,7 @@ public:
         bool is_last_call;
     };
 
-    Core::System& system;
+    VideoCore::Host& system;
     MemoryManager& memory_manager;
     Control::ChannelState& channel_state;
 

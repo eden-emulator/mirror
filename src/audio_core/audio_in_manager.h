@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2022 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -7,11 +10,8 @@
 #include <mutex>
 #include <vector>
 
+#include "audio_core/host.h"
 #include "audio_core/renderer/audio_device.h"
-
-namespace Core {
-class System;
-}
 
 namespace AudioCore::AudioIn {
 class In;
@@ -22,7 +22,7 @@ constexpr size_t MaxInSessions = 4;
  */
 class Manager {
 public:
-    explicit Manager(Core::System& system);
+    explicit Manager(Host& system);
 
     /**
      * Acquire a free session id for opening a new audio in.
@@ -67,7 +67,7 @@ public:
     u32 GetDeviceNames(std::span<Renderer::AudioDevice::AudioDeviceName> names, bool filter);
 
     /// Core system
-    Core::System& system;
+    Host& system;
     /// Array of session ids
     std::array<size_t, MaxInSessions> session_ids{};
     /// Array of resource user ids

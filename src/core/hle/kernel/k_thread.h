@@ -30,7 +30,7 @@
 #include "core/hle/kernel/slab_helpers.h"
 #include "core/hle/kernel/svc_common.h"
 #include "core/hle/kernel/svc_types.h"
-#include "core/hle/result.h"
+#include "common/result.h"
 
 namespace Common {
 class Fiber;

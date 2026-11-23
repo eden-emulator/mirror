@@ -10,11 +10,11 @@
 #include "core/hle/service/hid/hid_debug_server.h"
 #include "core/hle/service/ipc_helpers.h"
 #include "hid_core/hid_types.h"
-#include "hid_core/resource_manager.h"
-#include "hid_core/resources/hid_firmware_settings.h"
+#include "core/hle/service/hid/resource_manager.h"
+#include "core/hle/service/hid/resources/hid_firmware_settings.h"
 
-#include "hid_core/resources/touch_screen/gesture.h"
-#include "hid_core/resources/touch_screen/touch_screen.h"
+#include "core/hle/service/hid/resources/touch_screen/gesture.h"
+#include "core/hle/service/hid/resources/touch_screen/touch_screen.h"
 
 namespace Service::HID {
 

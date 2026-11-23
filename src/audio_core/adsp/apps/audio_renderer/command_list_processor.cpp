@@ -7,20 +7,18 @@
 #include <string>
 
 #include "audio_core/adsp/apps/audio_renderer/command_list_processor.h"
+#include "audio_core/host.h"
 #include "audio_core/renderer/command/command_list_header.h"
 #include "audio_core/renderer/command/commands.h"
 #include "common/settings.h"
-#include "core/core.h"
-#include "core/core_timing.h"
-#include "core/hle/kernel/k_process.h"
-#include "core/memory.h"
+#include "common/guest_memory_access.h"
 
 namespace AudioCore::ADSP::AudioRenderer {
 
-void CommandListProcessor::Initialize(Core::System& system_, Kernel::KProcess& process,
+void CommandListProcessor::Initialize(Host& system_, Kernel::KProcess& process,
                                       CpuAddr buffer, u64 size, Sink::SinkStream* stream_) {
     system = &system_;
-    memory = &process.GetMemory();
+    memory = &system_.ProcessMemory(process);
     stream = stream_;
     header = reinterpret_cast<Renderer::CommandListHeader*>(buffer);
     commands = reinterpret_cast<u8*>(buffer + sizeof(Renderer::CommandListHeader));
@@ -46,7 +44,7 @@ Sink::SinkStream* CommandListProcessor::GetOutputSinkStream() const {
 }
 
 u64 CommandListProcessor::Process(u32 session_id) {
-    const auto start_time_{system->CoreTiming().GetGlobalTimeUs().count()};
+    const auto start_time_{system->GlobalTimeUs().count()};
     const auto command_base{CpuAddr(commands)};
 
     if (processed_command_count > 0) {
@@ -64,7 +62,7 @@ u64 CommandListProcessor::Process(u32 session_id) {
         if (command.magic != 0xCAFEBABE) {
             LOG_ERROR(Service_Audio, "Command has invalid magic! Expected 0xCAFEBABE, got {:08X}",
                       command.magic);
-            return system->CoreTiming().GetGlobalTimeUs().count() - start_time_;
+            return system->GlobalTimeUs().count() - start_time_;
         }
 
         auto current_offset{CpuAddr(commands) - command_base};
@@ -74,7 +72,7 @@ u64 CommandListProcessor::Process(u32 session_id) {
                       "Command exceeded command buffer, buffer size {:08X}, command ends at {:08X}",
                       commands_buffer_size,
                       CpuAddr(commands) + command.size - sizeof(Renderer::CommandListHeader));
-            return system->CoreTiming().GetGlobalTimeUs().count() - start_time_;
+            return system->GlobalTimeUs().count() - start_time_;
         }
 
         if (Settings::values.dump_audio_commands) {
@@ -100,7 +98,7 @@ u64 CommandListProcessor::Process(u32 session_id) {
         last_dump = dump;
     }
 
-    end_time = system->CoreTiming().GetGlobalTimeUs().count();
+    end_time = system->GlobalTimeUs().count();
     return end_time - start_time_;
 }
 

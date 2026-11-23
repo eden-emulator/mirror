@@ -11,8 +11,8 @@
 #include <memory>
 #include "common/container/unordered_map.h"
 
-#include "core/device_memory_manager.h"
-#include "core/hle/service/nvdrv/nvdata.h"
+#include "video_core/host1x/device_memory_manager.h"
+#include "common/nvnflinger/nvdata.h"
 
 namespace Kernel {
 class KProcess;

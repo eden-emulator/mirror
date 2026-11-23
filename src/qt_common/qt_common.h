@@ -8,7 +8,7 @@
 
 #include "core/core.h"
 #include "core/file_sys/registered_cache.h"
-#include "core/frontend/emu_window.h"
+#include "common/frontend/emu_window.h"
 
 #include "qt_common/render/emu_thread.h"
 

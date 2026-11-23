@@ -15,7 +15,7 @@
 #include "common/common_types.h"
 #include "common/logging.h"
 #include "common/scratch_buffer.h"
-#include "core/guest_memory.h"
+#include "common/guest_memory.h"
 #include "core/hle/kernel/k_auto_object.h"
 #include "core/hle/kernel/k_handle_table.h"
 #include "core/hle/kernel/k_process.h"

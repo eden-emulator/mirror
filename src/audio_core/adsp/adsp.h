@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: Copyright 2023 yuzu Emulator Project
@@ -10,11 +10,8 @@
 
 #include "audio_core/adsp/apps/audio_renderer/audio_renderer.h"
 #include "audio_core/adsp/apps/opus/opus_decoder.h"
+#include "audio_core/host.h"
 #include "common/common_types.h"
-
-namespace Core {
-class System;
-} // namespace Core
 
 namespace AudioCore {
 namespace Sink {
@@ -42,7 +39,7 @@ namespace ADSP {
  */
 class ADSP {
 public:
-    explicit ADSP(Core::System& system, Sink::Sink& sink);
+    explicit ADSP(Host& system, Sink::Sink& sink);
     ~ADSP() = default;
 
     AudioRenderer::AudioRenderer& AudioRenderer();

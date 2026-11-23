@@ -22,7 +22,7 @@
 
 #include "common/logging.h"
 #include "common/socket_types.h"
-#include "core/hle/result.h"
+#include "common/result.h"
 #include "core/hle/service/ldn/ldn_results.h"
 #include "core/hle/service/ldn/ldn_types.h"
 #include "network/network.h"

@@ -17,7 +17,7 @@
 #include "common/common_funcs.h"
 #include "common/common_types.h"
 #include "common/polyfill_thread.h"
-#include "core/memory.h"
+#include "common/guest_memory_access.h"
 #include "video_core/host1x/control.h"
 
 namespace Tegra {
@@ -72,7 +72,7 @@ struct ChCommand {
 };
 
 using ChCommandHeaderList =
-    Core::Memory::CpuGuestMemory<Tegra::ChCommandHeader, Core::Memory::GuestMemoryFlags::SafeRead>;
+    Core::Memory::GuestAccessMemory<Tegra::ChCommandHeader, Core::Memory::GuestMemoryFlags::SafeRead>;
 
 struct ThiRegisters {
     static constexpr std::size_t NUM_REGS = 0x20;

@@ -22,7 +22,7 @@
 #include "core/file_sys/system_archive/system_archive.h"
 #include "core/file_sys/vfs/vfs_vector.h"
 #include "core/frontend/applets/web_browser.h"
-#include "core/hle/result.h"
+#include "common/result.h"
 #include "core/hle/service/am/am.h"
 #include "core/hle/service/am/frontend/applet_web_browser.h"
 #include "core/hle/service/am/service/storage.h"

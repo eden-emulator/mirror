@@ -9,7 +9,7 @@
 #include "common/container/unordered_map.h"
 
 #include "common/fs/fs.h"
-#include "core/hle/result.h"
+#include "common/result.h"
 #include "core/hle/service/caps/caps_types.h"
 
 namespace Core {

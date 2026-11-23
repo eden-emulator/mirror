@@ -16,10 +16,7 @@
 #include "video_core/engines/maxwell_dma.h"
 #include "video_core/engines/nv01_timer.h"
 #include "video_core/dma_pusher.h"
-
-namespace Core {
-class System;
-}
+#include "video_core/host.h"
 
 namespace VideoCore {
 class RasterizerInterface;
@@ -35,12 +32,12 @@ namespace Control {
 struct ChannelState {
     explicit ChannelState(s32 bind_id);
 
-    void Init(Core::System& system, u64 program_id);
+    void Init(VideoCore::Host& system, u64 program_id);
 
     void BindRasterizer(VideoCore::RasterizerInterface* rasterizer);
 
     struct Payload {
-        explicit Payload(Core::System& system, MemoryManager& memory_manager, ChannelState& channel_state);
+        explicit Payload(VideoCore::Host& system, MemoryManager& memory_manager, ChannelState& channel_state);
 
         /// 3D engine
         Engines::Maxwell3D maxwell_3d;

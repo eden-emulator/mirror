@@ -3,15 +3,14 @@
 
 #pragma once
 
+#include <functional>
 #include <future>
 #include <jni.h>
-#include <network/network.h>
-
-#include "video_core/rasterizer_interface.h"
 
 namespace Common::Android {
 
 void Initialize(JavaVM* vm, JNIEnv *env);
+void Shutdown(JNIEnv* env);
 JNIEnv* GetEnvForThread();
 
 /**

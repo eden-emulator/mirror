@@ -6,8 +6,9 @@
 
 #include "audio_core/renderer/memory/address_info.h"
 #include "audio_core/renderer/memory/pool_mapper.h"
-#include "core/hle/kernel/k_process.h"
-#include "core/hle/kernel/svc.h"
+#include "common/alignment.h"
+#include "common/guest_memory_access.h"
+#include "common/pseudo_handle.h"
 
 namespace AudioCore::Renderer {
 

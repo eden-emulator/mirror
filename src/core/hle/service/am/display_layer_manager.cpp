@@ -6,7 +6,7 @@
 
 #include "core/core.h"
 #include "core/hle/service/am/display_layer_manager.h"
-#include "core/hle/service/nvnflinger/hwc_layer.h"
+#include "common/nvnflinger/hwc_layer.h"
 #include "core/hle/service/sm/sm.h"
 #include "core/hle/service/vi/application_display_service.h"
 #include "core/hle/service/vi/container.h"

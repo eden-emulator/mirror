@@ -10,7 +10,7 @@
 #include <span>
 #include <vector>
 
-#include "core/hle/result.h"
+#include "common/result.h"
 #include "core/hle/service/ssl/ssl_types.h"
 
 namespace Core {

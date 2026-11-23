@@ -7,6 +7,12 @@
 add_library(yuzu-android SHARED
     emu_window/emu_window.cpp
     emu_window/emu_window.h
+    applets/software_keyboard.cpp
+    applets/software_keyboard.h
+    applets/web_browser.cpp
+    applets/web_browser.h
+    multiplayer/multiplayer.cpp
+    multiplayer/multiplayer.h
     native.cpp
     native.h
     native_config.cpp
@@ -23,6 +29,9 @@ add_library(yuzu-android SHARED
 set_property(TARGET yuzu-android PROPERTY IMPORTED_LOCATION ${FFmpeg_LIBRARY_DIR})
 
 target_link_libraries(yuzu-android PRIVATE audio_core common core input_common frontend_common video_core)
+if (ENABLE_WEB_SERVICE)
+    target_link_libraries(yuzu-android PRIVATE web_service)
+endif()
 target_link_libraries(yuzu-android PRIVATE android camera2ndk EGL glad jnigraphics log GLESv2)
 if (ARCHITECTURE_arm64)
     target_link_libraries(yuzu-android PRIVATE adrenotools)

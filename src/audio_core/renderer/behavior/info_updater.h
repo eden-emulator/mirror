@@ -9,7 +9,7 @@
 #include <span>
 
 #include "common/common_types.h"
-#include "core/hle/service/audio/errors.h"
+#include "audio_core/errors.h"
 
 namespace Kernel {
 class KProcess;

@@ -12,7 +12,7 @@
 #include "core/file_sys/fs_directory.h"
 #include "core/file_sys/fs_filesystem.h"
 #include "core/file_sys/vfs/vfs.h"
-#include "core/hle/result.h"
+#include "common/result.h"
 
 namespace Core {
 class System;

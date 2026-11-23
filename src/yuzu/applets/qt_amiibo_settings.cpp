@@ -9,7 +9,7 @@
 #include "input_common/drivers/virtual_amiibo.h"
 #include "input_common/main.h"
 #include "ui_qt_amiibo_settings.h"
-#include "web_service/web_result.h"
+#include "common/web_result.h"
 
 #ifdef ENABLE_WEB_SERVICE
 #include "web_service/web_backend.h"

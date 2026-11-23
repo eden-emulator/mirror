@@ -12,7 +12,7 @@
 #include "core/file_sys/fs_memory_management.h"
 #include "core/file_sys/fs_path_utility.h"
 #include "core/file_sys/fs_string_util.h"
-#include "core/hle/result.h"
+#include "common/result.h"
 
 namespace FileSys {
 class DirectoryPathParser;

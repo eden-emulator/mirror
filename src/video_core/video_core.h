@@ -5,13 +5,10 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
+#include "video_core/host.h"
 
 #include <memory>
 #include <optional>
-
-namespace Core {
-class System;
-}
 
 namespace Core::Frontend {
 class EmuWindow;
@@ -24,6 +21,6 @@ class GPU;
 namespace VideoCore {
 
 class RendererBase;
-void CreateGPU(std::optional<Tegra::GPU>& gpu, Core::Frontend::EmuWindow& emu_window, Core::System& system);
+void CreateGPU(std::optional<Tegra::GPU>& gpu, Core::Frontend::EmuWindow& emu_window, VideoCore::Host& system);
 
 } // namespace VideoCore

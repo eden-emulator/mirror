@@ -14,8 +14,8 @@
 #include "core/hle/service/hid/irs.h"
 #include "core/hle/service/hid/xcd.h"
 #include "core/hle/service/server_manager.h"
-#include "hid_core/resource_manager.h"
-#include "hid_core/resources/hid_firmware_settings.h"
+#include "core/hle/service/hid/resource_manager.h"
+#include "core/hle/service/hid/resources/hid_firmware_settings.h"
 
 namespace Service::HID {
 

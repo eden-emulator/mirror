@@ -9,7 +9,7 @@
 #include <map>
 #include <memory>
 #include <string>
-#include "core/hle/result.h"
+#include "common/result.h"
 #include "core/hle/service/cmif_types.h"
 #include "core/hle/service/kernel_helpers.h"
 #include "core/hle/service/service.h"

@@ -10,7 +10,7 @@
 #include <vector>
 #include "common/common_types.h"
 #include "core/file_sys/romfs_factory.h"
-#include "core/hle/result.h"
+#include "common/result.h"
 
 namespace Service::Glue {
 

@@ -12,10 +12,9 @@
 #include "audio_core/adsp/apps/opus/shared_memory.h"
 #include "audio_core/audio_core.h"
 #include "audio_core/common/common.h"
+#include "audio_core/host.h"
 #include "common/logging.h"
 #include "common/thread.h"
-#include "core/core.h"
-#include "core/core_timing.h"
 
 namespace AudioCore::ADSP::OpusDecoder {
 
@@ -36,7 +35,7 @@ bool IsValidMultiStreamStreamCounts(s32 total_stream_count, s32 stereo_stream_co
 }
 } // namespace
 
-OpusDecoder::OpusDecoder(Core::System& system_) : system{system_} {
+OpusDecoder::OpusDecoder(Host& system_) : system{system_} {
     init_thread = std::jthread([this](std::stop_token stop_token) { Init(stop_token); });
 }
 
@@ -124,7 +123,7 @@ void OpusDecoder::Main(std::stop_token stop_token) {
         } break;
 
         case DecodeInterleaved: {
-            auto start_time = system.CoreTiming().GetGlobalTimeUs();
+            auto start_time = system.GlobalTimeUs();
 
             auto buffer = shared_memory->host_send_data[0];
             auto input_data = shared_memory->host_send_data[1];
@@ -153,7 +152,7 @@ void OpusDecoder::Main(std::stop_token stop_token) {
                 }
             }
 
-            auto end_time = system.CoreTiming().GetGlobalTimeUs();
+            auto end_time = system.GlobalTimeUs();
             shared_memory->dsp_return_data[0] = error_code;
             shared_memory->dsp_return_data[1] = decoded_samples;
             shared_memory->dsp_return_data[2] = (end_time - start_time).count();
@@ -222,7 +221,7 @@ void OpusDecoder::Main(std::stop_token stop_token) {
         } break;
 
         case DecodeInterleavedForMultiStream: {
-            auto start_time = system.CoreTiming().GetGlobalTimeUs();
+            auto start_time = system.GlobalTimeUs();
 
             auto buffer = shared_memory->host_send_data[0];
             auto input_data = shared_memory->host_send_data[1];
@@ -251,7 +250,7 @@ void OpusDecoder::Main(std::stop_token stop_token) {
                 }
             }
 
-            auto end_time = system.CoreTiming().GetGlobalTimeUs();
+            auto end_time = system.GlobalTimeUs();
             shared_memory->dsp_return_data[0] = error_code;
             shared_memory->dsp_return_data[1] = decoded_samples;
             shared_memory->dsp_return_data[2] = (end_time - start_time).count();

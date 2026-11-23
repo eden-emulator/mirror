@@ -19,7 +19,6 @@
 #include <vector>
 
 #include "common/assert.h"
-#include "common/settings.h"
 #include "common/slot_vector.h"
 #include "video_core/control/channel_state_cache.h"
 #include "video_core/engines/maxwell_3d.h"

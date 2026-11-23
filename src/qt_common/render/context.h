@@ -6,7 +6,7 @@
 #include <QSurface>
 #include "common/logging.h"
 #include "common/settings.h"
-#include "core/frontend/graphics_context.h"
+#include "common/frontend/graphics_context.h"
 
 #ifdef HAS_OPENGL
 #include <QOffscreenSurface>

@@ -8,7 +8,7 @@
 
 #include "common/math_util.h"
 #include "core/hle/service/cmif_types.h"
-#include "core/hle/service/nvnflinger/ui/fence.h"
+#include "common/nvnflinger/fence.h"
 #include "core/hle/service/service.h"
 #include "core/hle/service/vi/shared_buffer_manager.h"
 

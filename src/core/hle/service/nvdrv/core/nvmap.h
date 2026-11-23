@@ -18,7 +18,7 @@
 #include "common/bit_field.h"
 #include "common/common_types.h"
 #include "core/hle/service/nvdrv/core/container.h"
-#include "core/hle/service/nvdrv/nvdata.h"
+#include "common/nvnflinger/nvdata.h"
 
 namespace Tegra {
 

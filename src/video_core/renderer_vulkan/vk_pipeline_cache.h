@@ -33,10 +33,6 @@
 #include "video_core/renderer_vulkan/vk_texture_cache.h"
 #include "video_core/shader_cache.h"
 
-namespace Core {
-class System;
-}
-
 namespace Shader::IR {
 struct Program;
 }

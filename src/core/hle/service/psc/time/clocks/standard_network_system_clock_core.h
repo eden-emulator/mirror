@@ -8,7 +8,7 @@
 
 #include <chrono>
 
-#include "core/hle/result.h"
+#include "common/result.h"
 #include "core/hle/service/psc/time/clocks/context_writers.h"
 #include "core/hle/service/psc/time/clocks/steady_clock_core.h"
 #include "core/hle/service/psc/time/clocks/system_clock_core.h"

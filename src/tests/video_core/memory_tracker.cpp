@@ -45,7 +45,12 @@ public:
     }
 
     void UpdatePagesCachedBatch(std::span<const std::pair<DAddr, size_t>> ranges, s32 delta) {
-        // TODO: for now assume fine?
+        // A batch counts as a single call no matter how many ranges it carries
+        const size_t calls_before = update_calls;
+        for (const auto& [addr, size] : ranges) {
+            UpdatePagesCachedCount(addr, size, delta);
+        }
+        update_calls = calls_before + 1;
     }
 
     [[nodiscard]] size_t UpdateCalls() const noexcept { return update_calls; }
@@ -560,22 +565,30 @@ TEST_CASE("MemoryTracker: Cached write downloads") {
 TEST_CASE("MemoryTracker: FlushCachedWrites batching") {
     RasterizerInterface rasterizer;
     std::optional<MemoryTracker> memory_track(rasterizer);
+    // Both words are contiguous, so they reach the tracker as one coalesced batch
     memory_track->UnmarkRegionAsCpuModified(c, WORD * 2);
+    REQUIRE(rasterizer.UpdateCalls() == 1);
+    const auto& calls = rasterizer.UpdateCallsList();
+    REQUIRE(calls.size() == 1);
+    REQUIRE(std::get<0>(calls[0]) == c);
+    REQUIRE(std::get<1>(calls[0]) == WORD * 2);
+    REQUIRE(std::get<2>(calls[0]) == 1);
+    // Cached writes stop tracking their pages right away
     memory_track->CachedCpuWrite(c + PAGE, PAGE);
     memory_track->CachedCpuWrite(c + PAGE * 2, PAGE);
     memory_track->CachedCpuWrite(c + PAGE * 4, PAGE);
-    REQUIRE(rasterizer.UpdateCalls() == 0);
+    REQUIRE(rasterizer.UpdateCalls() == 4);
+    REQUIRE(rasterizer.Count() == WORD * 2 / PAGE - 3);
+    // so flushing them has nothing left to report
     memory_track->FlushCachedWrites();
-    // Now we expect a single batch call (coalesced ranges) to the device memory manager
-    REQUIRE(rasterizer.UpdateCalls() == 1);
-    const auto& calls = rasterizer.UpdateCallsList();
-    REQUIRE(std::get<0>(calls[0]) == c + PAGE);
-    REQUIRE(std::get<1>(calls[0]) == PAGE * 3);
+    REQUIRE(rasterizer.UpdateCalls() == 4);
+    REQUIRE(memory_track->IsRegionCpuModified(c + PAGE, PAGE * 2));
+    REQUIRE(memory_track->IsRegionCpuModified(c + PAGE * 4, PAGE));
 }
 
 TEST_CASE("DeviceMemoryManager: UpdatePagesCachedBatch basic") {
     Core::DeviceMemory device_memory;
-    Tegra::MaxwellDeviceMemoryManager manager(device_memory);
+    Tegra::MaxwellDeviceMemoryManager manager(device_memory.buffer.BackingBasePointer());
     // empty should be a no-op
     std::vector<std::pair<DAddr, size_t>> empty;
     manager.UpdatePagesCachedBatch(empty, 1);

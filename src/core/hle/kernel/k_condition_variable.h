@@ -12,7 +12,7 @@
 #include "core/hle/kernel/k_thread.h"
 #include "core/hle/kernel/k_typed_address.h"
 #include "core/hle/kernel/kernel.h"
-#include "core/hle/result.h"
+#include "common/result.h"
 
 namespace Core {
 class System;

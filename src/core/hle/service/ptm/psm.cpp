@@ -11,7 +11,7 @@
 #include "common/logging.h"
 #include "core/core.h"
 #include "core/hle/kernel/k_event.h"
-#include "core/hle/result.h"
+#include "common/result.h"
 #include "core/hle/service/ipc_helpers.h"
 #include "core/hle/service/kernel_helpers.h"
 #include "core/hle/service/ptm/psm.h"

@@ -12,14 +12,14 @@
 #include "common/string_util.h"
 #include "core/core.h"
 #include "core/frontend/applets/controller.h"
-#include "core/hle/result.h"
+#include "common/result.h"
 #include "core/hle/service/am/am.h"
 #include "core/hle/service/am/frontend/applet_controller.h"
 #include "core/hle/service/am/service/storage.h"
 #include "hid_core/frontend/emulated_controller.h"
 #include "hid_core/hid_core.h"
 #include "hid_core/hid_types.h"
-#include "hid_core/resources/npad/npad.h"
+#include "core/hle/service/hid/resources/npad/npad.h"
 
 namespace Service::AM::Frontend {
 

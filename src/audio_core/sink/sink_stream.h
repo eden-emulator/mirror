@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: Copyright 2018 yuzu Emulator Project
@@ -15,15 +15,12 @@
 #include <vector>
 
 #include "audio_core/common/common.h"
+#include "audio_core/host.h"
 #include "common/bounded_threadsafe_queue.h"
 #include "common/common_types.h"
 #include "common/polyfill_thread.h"
 #include "common/ring_buffer.h"
 #include "common/thread.h"
-
-namespace Core {
-class System;
-} // namespace Core
 
 namespace AudioCore::Sink {
 
@@ -58,7 +55,7 @@ struct SinkBuffer {
  */
 class SinkStream {
 public:
-    explicit SinkStream(Core::System& system_, StreamType type_) : system{system_}, type{type_} {}
+    explicit SinkStream(Host& system_, StreamType type_) : system{system_}, type{type_} {}
     virtual ~SinkStream() {}
 
     /**
@@ -224,7 +221,7 @@ protected:
 
 protected:
     /// Core system
-    Core::System& system;
+    Host& system;
     /// Type of this stream
     StreamType type;
     /// Set by the audio render/in/out system which uses this stream

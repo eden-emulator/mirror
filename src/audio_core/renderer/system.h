@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2022 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -7,6 +10,7 @@
 #include <mutex>
 #include <span>
 
+#include "audio_core/host.h"
 #include "audio_core/renderer/behavior/behavior_info.h"
 #include "audio_core/renderer/command/command_processing_time_estimator.h"
 #include "audio_core/renderer/effect/effect_context.h"
@@ -18,14 +22,7 @@
 #include "audio_core/renderer/upsampler/upsampler_manager.h"
 #include "audio_core/renderer/voice/voice_context.h"
 #include "common/thread.h"
-#include "core/hle/service/audio/errors.h"
-
-namespace Core {
-namespace Memory {
-class Memory;
-}
-class System;
-} // namespace Core
+#include "audio_core/errors.h"
 
 namespace Kernel {
 class KEvent;
@@ -56,7 +53,7 @@ class System {
     };
 
 public:
-    explicit System(Core::System& core, Kernel::KEvent* adsp_rendered_event);
+    explicit System(Host& core, Kernel::KEvent* adsp_rendered_event);
 
     /**
      * Calculate the total size required for all audio render workbuffers.
@@ -218,7 +215,7 @@ public:
 
 private:
     /// Core system
-    Core::System& core;
+    Host& core;
     /// Reference to the ADSP's AudioRenderer for communication
     ::AudioCore::ADSP::AudioRenderer::AudioRenderer& audio_renderer;
     /// Is this system initialized?

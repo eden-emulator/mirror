@@ -15,7 +15,7 @@
 #include "common/logging.h"
 #include <ranges>
 #include <vulkan/vulkan_core.h>
-#include "core/frontend/emu_window.h"
+#include "common/frontend/emu_window.h"
 #include "video_core/vulkan_common/vulkan_instance.h"
 #include "video_core/vulkan_common/vulkan_wrapper.h"
 

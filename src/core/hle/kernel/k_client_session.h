@@ -10,7 +10,7 @@
 
 #include "core/hle/kernel/k_auto_object.h"
 #include "core/hle/kernel/slab_helpers.h"
-#include "core/hle/result.h"
+#include "common/result.h"
 
 namespace Kernel {
 

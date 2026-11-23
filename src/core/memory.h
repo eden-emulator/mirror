@@ -13,10 +13,11 @@
 #include <string>
 #include <vector>
 
+#include "common/guest_memory_access.h"
 #include "common/scratch_buffer.h"
 #include "common/typed_address.h"
-#include "core/guest_memory.h"
-#include "core/hle/result.h"
+#include "common/guest_memory.h"
+#include "common/result.h"
 
 namespace Common {
 enum class MemoryPermission : u32;
@@ -38,14 +39,6 @@ class MemoryManager;
 
 namespace Core::Memory {
 
-/**
- * Page size used by the ARM architecture. This is the smallest granularity with which memory can
- * be mapped.
- */
-constexpr std::size_t YUZU_PAGEBITS = 12;
-constexpr u64 YUZU_PAGESIZE = 1ULL << YUZU_PAGEBITS;
-constexpr u64 YUZU_PAGEMASK = YUZU_PAGESIZE - 1;
-
 enum class NCEAccessFaultAction {
     Unmapped,
     Retry,
@@ -62,7 +55,7 @@ enum : u64 {
 };
 
 /// Central class that handles all memory operations and state.
-class Memory {
+class Memory final : public GuestMemoryAccess {
 public:
     explicit Memory(Core::System& system);
     ~Memory();
@@ -152,7 +145,7 @@ public:
      *          If the address is not valid, nullptr will be returned.
      */
     u8* GetPointer(Common::ProcessAddress vaddr);
-    u8* GetPointerSilent(Common::ProcessAddress vaddr);
+    u8* GetPointerSilent(Common::ProcessAddress vaddr) override;
 
     template <typename T>
     T* GetPointer(Common::ProcessAddress vaddr) {
@@ -245,7 +238,7 @@ public:
      *
      * @post The memory range [addr, sizeof(data)) contains the given data value.
      */
-    void Write32(Common::ProcessAddress addr, u32 data);
+    void Write32(Common::ProcessAddress addr, u32 data) override;
 
     /**
      * Writes a 64-bit unsigned integer to the given virtual address in
@@ -356,7 +349,7 @@ public:
      * @post The range [dest_buffer, size) contains the read bytes from the
      *       current process' address space.
      */
-    bool ReadBlock(Common::ProcessAddress src_addr, void* dest_buffer, std::size_t size);
+    bool ReadBlock(Common::ProcessAddress src_addr, void* dest_buffer, std::size_t size) override;
 
     /**
      * Reads a contiguous block of bytes from the current process' address space.
@@ -375,10 +368,10 @@ public:
      * @post The range [dest_buffer, size) contains the read bytes from the
      *       current process' address space.
      */
-    bool ReadBlockUnsafe(Common::ProcessAddress src_addr, void* dest_buffer, std::size_t size);
+    bool ReadBlockUnsafe(Common::ProcessAddress src_addr, void* dest_buffer, std::size_t size) override;
 
     const u8* GetSpan(const VAddr src_addr, const std::size_t size) const;
-    u8* GetSpan(const VAddr src_addr, const std::size_t size);
+    u8* GetSpan(const VAddr src_addr, const std::size_t size) override;
 
     /**
      * Writes a range of bytes into the current process' address space at the specified
@@ -399,7 +392,7 @@ public:
      *       and will mark that region as invalidated to caches that the active
      *       graphics backend may be maintaining over the course of execution.
      */
-    bool WriteBlock(Common::ProcessAddress dest_addr, const void* src_buffer, std::size_t size);
+    bool WriteBlock(Common::ProcessAddress dest_addr, const void* src_buffer, std::size_t size) override;
 
     /**
      * Writes a range of bytes into the current process' address space at the specified
@@ -418,7 +411,7 @@ public:
      *
      */
     bool WriteBlockUnsafe(Common::ProcessAddress dest_addr, const void* src_buffer,
-                          std::size_t size);
+                          std::size_t size) override;
 
     /**
      * Copies data within a process' address space to another location within the
@@ -444,7 +437,7 @@ public:
      * @post The range [dest_addr, size) within the process' address space contains the
      *       value 0.
      */
-    bool ZeroBlock(Common::ProcessAddress dest_addr, std::size_t size);
+    bool ZeroBlock(Common::ProcessAddress dest_addr, std::size_t size) override;
 
     /**
      * Invalidates a range of bytes within the current process' address space at the specified
@@ -484,7 +477,7 @@ public:
      * @param cached Whether or not any pages within the address range should be
      *               marked as cached or uncached.
      */
-    void RasterizerMarkRegionCached(Common::ProcessAddress vaddr, u64 size, bool cached);
+    void RasterizerMarkRegionCached(Common::ProcessAddress vaddr, u64 size, bool cached) override;
 
     /**
      * Marks each page within the specified address range as debug or non-debug.

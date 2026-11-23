@@ -9,7 +9,7 @@
 #include <vector>
 
 #include "core/hle/kernel/k_auto_object.h"
-#include "core/hle/result.h"
+#include "common/result.h"
 
 namespace Kernel {
 

@@ -12,7 +12,7 @@
 #include "common/common_types.h"
 #include "core/file_sys/fs_save_data_types.h"
 #include "core/file_sys/vfs/vfs.h"
-#include "core/hle/result.h"
+#include "common/result.h"
 
 namespace Core {
 class System;

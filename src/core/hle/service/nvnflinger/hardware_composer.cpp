@@ -12,7 +12,7 @@
 #include "core/hle/service/nvnflinger/buffer_item.h"
 #include "core/hle/service/nvnflinger/buffer_item_consumer.h"
 #include "core/hle/service/nvnflinger/hardware_composer.h"
-#include "core/hle/service/nvnflinger/hwc_layer.h"
+#include "common/nvnflinger/hwc_layer.h"
 #include "core/hle/service/nvnflinger/ui/graphic_buffer.h"
 
 namespace Service::Nvnflinger {

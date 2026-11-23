@@ -9,6 +9,7 @@
 #include <thread>
 #include <vector>
 #include <functional>
+#include <memory>
 #include <string>
 #include "common/announce_multiplayer_room.h"
 #include "web_service/web_backend.h"
@@ -42,5 +43,8 @@ private:
     std::string username;
     std::string room_id;
 };
+
+/// Creates a RoomJson backend using the credentials in the current settings
+std::unique_ptr<AnnounceMultiplayerRoom::Backend> MakeRoomJsonBackend();
 
 } // namespace WebService

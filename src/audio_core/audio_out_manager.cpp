@@ -7,14 +7,13 @@
 #include "audio_core/audio_core.h"
 #include "audio_core/audio_manager.h"
 #include "audio_core/audio_out_manager.h"
+#include "audio_core/host.h"
 #include "audio_core/out/audio_out.h"
-#include "core/core.h"
-#include "core/hle/kernel/k_event.h"
-#include "core/hle/service/audio/errors.h"
+#include "audio_core/errors.h"
 
 namespace AudioCore::AudioOut {
 
-Manager::Manager(Core::System& system_) : system{system_} {
+Manager::Manager(Host& system_) : system{system_} {
     std::iota(session_ids.begin(), session_ids.end(), 0);
     num_free_sessions = MaxOutSessions;
 }

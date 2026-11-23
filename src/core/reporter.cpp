@@ -20,7 +20,7 @@
 #include "common/settings.h"
 #include "core/core.h"
 #include "core/hle/ipc.h"
-#include "core/hle/result.h"
+#include "common/result.h"
 #include "core/hle/service/hle_ipc.h"
 #include "core/memory.h"
 #include "core/reporter.h"

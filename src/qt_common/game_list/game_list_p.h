@@ -22,7 +22,7 @@
 #include "common/common_types.h"
 #include "common/logging.h"
 #include "common/string_util.h"
-#include "frontend_common/play_time_manager.h"
+#include "core/play_time_manager.h"
 #include "qt_common/config/uisettings.h"
 #include "qt_common/qt_common.h"
 

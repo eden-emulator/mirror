@@ -19,8 +19,8 @@
 #include "core/hle/service/sm/sm.h"
 #include "core/memory.h"
 #include "core/memory/cheat_engine.h"
-#include "hid_core/resource_manager.h"
-#include "hid_core/resources/npad/npad.h"
+#include "core/hle/service/hid/resource_manager.h"
+#include "core/hle/service/hid/resources/npad/npad.h"
 
 namespace Core::Memory {
 namespace {

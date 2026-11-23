@@ -15,7 +15,7 @@
 
 #include "core/hle/kernel/k_port.h"
 #include "core/hle/kernel/svc.h"
-#include "core/hle/result.h"
+#include "common/result.h"
 #include "core/hle/service/service.h"
 
 namespace Core {

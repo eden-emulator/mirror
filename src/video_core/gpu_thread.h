@@ -17,6 +17,7 @@
 #include "common/polyfill_thread.h"
 #include "video_core/dma_pusher.h"
 #include "video_core/framebuffer_config.h"
+#include "video_core/host.h"
 
 namespace Tegra {
 struct FramebufferConfig;
@@ -29,7 +30,6 @@ namespace Core {
 namespace Frontend {
 class GraphicsContext;
 }
-class System;
 } // namespace Core
 
 namespace VideoCore {
@@ -104,7 +104,7 @@ struct SynchState final {
 /// Class used to manage the GPU thread
 class ThreadManager final {
 public:
-    explicit ThreadManager(Core::System& system_);
+    explicit ThreadManager(VideoCore::Host& system_);
     ~ThreadManager();
 
     /// Creates and starts the GPU thread.
@@ -131,7 +131,7 @@ private:
     /// Pushes a command to be executed by the GPU thread
     u64 PushCommand(CommandData&& command_data, bool block, bool is_async);
 
-    Core::System& system;
+    VideoCore::Host& system;
     VideoCore::RasterizerInterface* rasterizer = nullptr;
     SynchState state;
     std::jthread thread;

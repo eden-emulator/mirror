@@ -8,7 +8,7 @@
 
 #include "core/hle/service/cmif_types.h"
 #include "core/hle/service/service.h"
-#include "hid_core/resources/touch_screen/touch_types.h"
+#include "core/hle/service/hid/resources/touch_screen/touch_types.h"
 
 namespace Core {
 class System;

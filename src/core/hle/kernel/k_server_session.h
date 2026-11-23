@@ -16,7 +16,7 @@
 #include "core/hle/kernel/k_light_lock.h"
 #include "core/hle/kernel/k_session_request.h"
 #include "core/hle/kernel/k_synchronization_object.h"
-#include "core/hle/result.h"
+#include "common/result.h"
 
 namespace Service {
 class HLERequestContext;

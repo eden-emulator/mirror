@@ -10,8 +10,8 @@
 
 #include "common/math_util.h"
 #include "core/hle/service/nvdrv/core/container.h"
-#include "core/hle/service/nvdrv/nvdata.h"
-#include "core/hle/service/nvnflinger/ui/fence.h"
+#include "common/nvnflinger/nvdata.h"
+#include "common/nvnflinger/fence.h"
 
 namespace Kernel {
 class KPageGroup;

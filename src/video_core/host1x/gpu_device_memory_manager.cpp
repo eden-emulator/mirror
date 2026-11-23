@@ -1,14 +1,17 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: 2023 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "core/device_memory_manager.inc"
+#include "video_core/host1x/device_memory_manager.inc"
 #include "video_core/host1x/gpu_device_memory_manager.h"
 #include "video_core/rasterizer_interface.h"
 
 namespace Tegra {
 
 struct MaxwellDeviceMethods {
-    static inline void MarkRegionCaching(Core::Memory::Memory* interface, VAddr address,
+    static inline void MarkRegionCaching(Core::Memory::GuestMemoryAccess* interface, VAddr address,
                                          size_t size, bool caching) {
         interface->RasterizerMarkRegionCached(address, size, caching);
     }

@@ -11,10 +11,10 @@
 
 #include "common/common_types.h"
 #include "common/math_util.h"
-#include "core/hle/service/nvnflinger/buffer_transform_flags.h"
-#include "core/hle/service/nvnflinger/hwc_layer.h"
-#include "core/hle/service/nvnflinger/pixel_format.h"
-#include "core/hle/service/nvnflinger/ui/fence.h"
+#include "common/nvnflinger/buffer_transform_flags.h"
+#include "common/nvnflinger/hwc_layer.h"
+#include "common/nvnflinger/pixel_format.h"
+#include "common/nvnflinger/fence.h"
 
 namespace Tegra {
 

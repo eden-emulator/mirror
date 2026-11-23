@@ -13,7 +13,7 @@
 
 #include "common/common_types.h"
 #include "common/math_util.h"
-#include "core/hle/service/nvnflinger/ui/fence.h"
+#include "common/nvnflinger/fence.h"
 #include "core/hle/service/nvnflinger/window.h"
 
 namespace Service::android {

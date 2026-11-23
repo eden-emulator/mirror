@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "core/hle/result.h"
+#include "common/result.h"
 #include "core/hle/service/mii/mii_types.h"
 #include "core/hle/service/mii/types/core_data.h"
 

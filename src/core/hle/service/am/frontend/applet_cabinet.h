@@ -8,7 +8,7 @@
 
 #include <array>
 
-#include "core/hle/result.h"
+#include "common/result.h"
 #include "core/hle/service/am/frontend/applets.h"
 #include "core/hle/service/kernel_helpers.h"
 #include "core/hle/service/nfp/nfp_types.h"

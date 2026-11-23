@@ -11,8 +11,6 @@ add_library(frontend_common STATIC
     firmware_manager.h
     firmware_manager.cpp
     data_manager.h data_manager.cpp
-    play_time_manager.cpp
-    play_time_manager.h
     settings_generator.h settings_generator.cpp
     mod_manager.h mod_manager.cpp)
 

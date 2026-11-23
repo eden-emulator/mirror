@@ -14,7 +14,7 @@
 #include "core/hle/service/caps/caps_u.h"
 #include "core/hle/service/server_manager.h"
 #include "core/hle/service/service.h"
-#include "frontend_common/firmware_manager.h"
+#include "core/hle/service/set/system_settings_server.h"
 
 namespace Service::Capture {
 
@@ -43,7 +43,7 @@ void LoopProcess(Core::System& system) {
     server_manager->RegisterNamedService("caps:sc", std::make_shared<IScreenShotControlService>(system));
     server_manager->RegisterNamedService("caps:su", std::make_shared<IScreenShotApplicationService>(system, album_manager));
     // +4.0.0
-    if (FirmwareManager::GetFirmwareVersion(system).first.major >= 4) {
+    if (Service::Set::GetInstalledFirmwareVersion(system).first.major >= 4) {
         server_manager->RegisterNamedService("caps:dc", std::make_shared<IDecoderControlService>(system));
     }
     ServerManager::RunServer(std::move(server_manager));

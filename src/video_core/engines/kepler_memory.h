@@ -13,10 +13,7 @@
 #include "common/common_types.h"
 #include "video_core/engines/engine_interface.h"
 #include "video_core/engines/engine_upload.h"
-
-namespace Core {
-class System;
-}
+#include "video_core/host.h"
 
 namespace Tegra {
 class MemoryManager;
@@ -46,10 +43,10 @@ public:
     void BindRasterizer(VideoCore::RasterizerInterface* rasterizer);
 
     /// Write the value to the register identified by method.
-    void CallMethod(Core::System& system, u32 method, u32 method_argument, bool is_last_call) override;
+    void CallMethod(VideoCore::Host& system, u32 method, u32 method_argument, bool is_last_call) override;
 
     /// Write multiple values to the register identified by method.
-    void CallMultiMethod(Core::System& system, u32 method, const u32* base_start, u32 amount, u32 methods_pending) override;
+    void CallMultiMethod(VideoCore::Host& system, u32 method, const u32* base_start, u32 amount, u32 methods_pending) override;
 
     struct Regs {
         static constexpr size_t NUM_REGS = 0x7F;
@@ -75,7 +72,7 @@ public:
     } regs{};
 
 private:
-    void ConsumeSinkImpl(Core::System& system) override;
+    void ConsumeSinkImpl(VideoCore::Host& system) override;
     Upload::State upload_state;
 };
 

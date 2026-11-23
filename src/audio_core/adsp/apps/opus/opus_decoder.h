@@ -11,11 +11,8 @@
 
 #include "audio_core/adsp/apps/opus/shared_memory.h"
 #include "audio_core/adsp/mailbox.h"
+#include "audio_core/host.h"
 #include "common/common_types.h"
-
-namespace Core {
-class System;
-} // namespace Core
 
 namespace AudioCore::ADSP::OpusDecoder {
 
@@ -53,7 +50,7 @@ enum Message : u32 {
  */
 class OpusDecoder {
 public:
-    explicit OpusDecoder(Core::System& system);
+    explicit OpusDecoder(Host& system);
     ~OpusDecoder();
 
     bool IsRunning() const noexcept {
@@ -78,7 +75,7 @@ private:
     void Main(std::stop_token stop_token);
 
     /// Core system
-    Core::System& system;
+    Host& system;
     /// Mailbox to communicate messages with the host, drives the main thread
     Mailbox mailbox;
     /// Init thread

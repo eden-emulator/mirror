@@ -120,7 +120,7 @@ FirmwareManager::FirmwareCheckResult FirmwareManager::VerifyFirmware(Core::Syste
     if (!CheckFirmwarePresence(system)) {
         return ErrorFirmwareMissing;
     } else {
-        const auto pair = GetFirmwareVersion(system);
+        const auto pair = Service::Set::GetInstalledFirmwareVersion(system);
         const auto result = pair.second;
 
         if (result.IsError()) {

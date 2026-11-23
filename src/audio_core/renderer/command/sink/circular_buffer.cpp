@@ -8,7 +8,7 @@
 
 #include "audio_core/adsp/apps/audio_renderer/command_list_processor.h"
 #include "audio_core/renderer/command/sink/circular_buffer.h"
-#include "core/memory.h"
+#include "common/guest_memory_access.h"
 
 namespace AudioCore::Renderer {
 

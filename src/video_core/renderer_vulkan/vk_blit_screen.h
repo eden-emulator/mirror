@@ -9,15 +9,11 @@
 #include <list>
 #include <memory>
 
-#include "core/frontend/framebuffer_layout.h"
+#include "common/frontend/framebuffer_layout.h"
 #include "video_core/host1x/gpu_device_memory_manager.h"
 #include "video_core/renderer_vulkan/present/layer.h"
 #include "video_core/vulkan_common/vulkan_memory_allocator.h"
 #include "video_core/vulkan_common/vulkan_wrapper.h"
-
-namespace Core {
-class System;
-}
 
 struct PresentFilters;
 

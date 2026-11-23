@@ -6,8 +6,7 @@
 
 #include "audio_core/adsp/apps/audio_renderer/command_list_processor.h"
 #include "audio_core/renderer/command/performance/performance.h"
-#include "core/core.h"
-#include "core/core_timing.h"
+#include "audio_core/host.h"
 
 namespace AudioCore::Renderer {
 
@@ -21,7 +20,7 @@ void PerformanceCommand::Process(const AudioRenderer::CommandListProcessor& proc
     if (state == PerformanceState::Start) {
         auto start_time_ptr{reinterpret_cast<u32*>(base + entry_address.entry_start_time_offset)};
         *start_time_ptr =
-            static_cast<u32>(processor.system->CoreTiming().GetGlobalTimeUs().count() -
+            static_cast<u32>(processor.system->GlobalTimeUs().count() -
                              processor.start_time - processor.current_processing_time);
     } else if (state == PerformanceState::Stop) {
         auto processed_time_ptr{
@@ -30,7 +29,7 @@ void PerformanceCommand::Process(const AudioRenderer::CommandListProcessor& proc
             reinterpret_cast<u32*>(base + entry_address.header_entry_count_offset)};
 
         *processed_time_ptr =
-            static_cast<u32>(processor.system->CoreTiming().GetGlobalTimeUs().count() -
+            static_cast<u32>(processor.system->GlobalTimeUs().count() -
                              processor.start_time - processor.current_processing_time);
         (*entry_count_ptr)++;
     }

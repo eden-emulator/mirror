@@ -11,7 +11,7 @@
 #include "core/hle/service/audio/audio_device.h"
 #include "core/hle/service/audio/audio_renderer.h"
 #include "core/hle/service/audio/audio_renderer_manager.h"
-#include "core/hle/service/audio/errors.h"
+#include "audio_core/errors.h"
 #include "core/hle/service/cmif_serialization.h"
 
 namespace Service::Audio {

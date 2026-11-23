@@ -8,8 +8,8 @@
 #include <array>
 
 #include "audio_core/audio_core.h"
+#include "audio_core/host.h"
 #include "audio_core/opus/hardware_opus.h"
-#include "core/core.h"
 
 namespace AudioCore::OpusDecoder {
 namespace {
@@ -41,7 +41,7 @@ static constexpr Result ResultCodeFromLibOpusErrorCode(u64 error_code) {
 
 } // namespace
 
-HardwareOpus::HardwareOpus(Core::System& system_)
+HardwareOpus::HardwareOpus(Host& system_)
     : system{system_}, opus_decoder{system.AudioCore().ADSP().OpusDecoder()} {
     opus_decoder.SetSharedMemory(shared_memory);
 }

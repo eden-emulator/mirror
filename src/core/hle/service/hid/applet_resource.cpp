@@ -8,7 +8,7 @@
 #include "core/hle/kernel/k_shared_memory.h"
 #include "core/hle/service/cmif_serialization.h"
 #include "core/hle/service/hid/applet_resource.h"
-#include "hid_core/resource_manager.h"
+#include "core/hle/service/hid/resource_manager.h"
 
 namespace Service::HID {
 

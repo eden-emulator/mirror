@@ -12,8 +12,8 @@
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_timer.h>
 
-#include "core/frontend/emu_window.h"
-#include "core/frontend/graphics_context.h"
+#include "common/frontend/emu_window.h"
+#include "common/frontend/graphics_context.h"
 
 namespace Core {
 class System;

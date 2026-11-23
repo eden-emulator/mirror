@@ -15,7 +15,7 @@
 #include "core/file_sys/registered_cache.h"
 #include "core/file_sys/savedata_factory.h"
 #include "core/hle/kernel/k_transfer_memory.h"
-#include "core/hle/result.h"
+#include "common/result.h"
 #include "core/hle/service/am/am_results.h"
 #include "core/hle/service/am/applet.h"
 #include "core/hle/service/am/service/application_functions.h"

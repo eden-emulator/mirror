@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2024 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -7,7 +10,7 @@
 #include "core/file_sys/fs_filesystem.h"
 #include "core/file_sys/fs_path.h"
 #include "core/file_sys/vfs/vfs_types.h"
-#include "core/hle/result.h"
+#include "common/result.h"
 #include "core/hle/service/filesystem/filesystem.h"
 
 namespace FileSys::Fsa {

@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: Copyright 2022 yuzu Emulator Project
@@ -14,7 +14,7 @@
 
 #include "audio_buffer.h"
 #include "audio_core/device/device_session.h"
-#include "core/core_timing.h"
+#include "audio_core/host.h"
 
 namespace AudioCore {
 
@@ -97,7 +97,7 @@ public:
      *
      * @return If any buffer was released.
      */
-    bool ReleaseBuffers(const Core::Timing::CoreTiming& core_timing, const DeviceSession& session,
+    bool ReleaseBuffers(Host& core_timing, const DeviceSession& session,
                         bool force) {
         std::scoped_lock l{lock};
         bool buffer_released{false};
@@ -115,7 +115,7 @@ public:
 
             session.ReleaseBuffer(buffers[index]);
 
-            ReleaseBuffer(index, core_timing.GetGlobalTimeNs().count());
+            ReleaseBuffer(index, core_timing.GlobalTimeNs().count());
             buffer_released = true;
         }
 

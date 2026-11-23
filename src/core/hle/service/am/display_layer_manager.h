@@ -9,7 +9,7 @@
 #include <set>
 
 #include "common/common_types.h"
-#include "core/hle/result.h"
+#include "common/result.h"
 #include "core/hle/service/am/am_types.h"
 
 namespace Core {

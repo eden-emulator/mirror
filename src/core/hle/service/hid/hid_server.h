@@ -9,8 +9,8 @@
 #include "core/hle/service/cmif_types.h"
 #include "core/hle/service/service.h"
 #include "hid_core/hid_types.h"
-#include "hid_core/resources/npad/npad_types.h"
-#include "hid_core/resources/palma/palma.h"
+#include "core/hle/service/hid/resources/npad/npad_types.h"
+#include "core/hle/service/hid/resources/palma/palma.h"
 
 namespace Core {
 class System;

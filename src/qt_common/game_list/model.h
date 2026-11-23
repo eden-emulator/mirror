@@ -10,7 +10,7 @@
 #include <QVector>
 
 #include "common/common_types.h"
-#include "frontend_common/play_time_manager.h"
+#include "core/play_time_manager.h"
 #include "qt_common/config/uisettings.h"
 
 namespace Core {

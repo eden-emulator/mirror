@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "core/core.h"
-#include "core/hle/result.h"
+#include "common/result.h"
 #include "core/hle/service/wlan/wlan.h"
 #include "core/hle/service/ipc_helpers.h"
 #include "core/hle/service/cmif_serialization.h"

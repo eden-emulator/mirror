@@ -10,7 +10,7 @@
 #include "core/hle/service/ns/query_service.h"
 #include "core/hle/service/service.h"
 #include "core/launch_timestamp_cache.h"
-#include "frontend_common/play_time_manager.h"
+#include "core/play_time_manager.h"
 
 namespace Service::NS {
 

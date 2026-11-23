@@ -9,7 +9,7 @@
 #include <mutex>
 
 #include "common/common_types.h"
-#include "core/hle/result.h"
+#include "common/result.h"
 #include "core/hle/service/psc/time/common.h"
 
 namespace Core {

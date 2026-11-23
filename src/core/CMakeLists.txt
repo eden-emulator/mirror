@@ -48,8 +48,6 @@ add_library(core STATIC
     debugger/gdbstub_arch.h
     device_memory.cpp
     device_memory.h
-    device_memory_manager.h
-    device_memory_manager.inc
     file_sys/bis_factory.cpp
     file_sys/bis_factory.h
     file_sys/card_image.cpp
@@ -203,11 +201,6 @@ add_library(core STATIC
     frontend/applets/software_keyboard.h
     frontend/applets/web_browser.cpp
     frontend/applets/web_browser.h
-    frontend/emu_window.cpp
-    frontend/emu_window.h
-    frontend/framebuffer_layout.cpp
-    frontend/framebuffer_layout.h
-    frontend/graphics_context.h
     hle/api_version.h
     hle/ipc.h
     hle/kernel/board/nintendo/nx/k_memory_layout.cpp
@@ -390,7 +383,6 @@ add_library(core STATIC
     hle/kernel/svc_common.h
     hle/kernel/svc_results.h
     hle/kernel/svc_types.h
-    hle/result.h
     hle/service/acc/acc.cpp
     hle/service/acc/acc.h
     hle/service/acc/async_context.cpp
@@ -531,7 +523,6 @@ add_library(core STATIC
     hle/service/audio/audio_renderer.h
     hle/service/audio/audio.cpp
     hle/service/audio/audio.h
-    hle/service/audio/errors.h
     hle/service/audio/final_output_recorder_manager_for_applet.cpp
     hle/service/audio/final_output_recorder_manager_for_applet.h
     hle/service/audio/final_output_recorder_manager.cpp
@@ -705,8 +696,127 @@ add_library(core STATIC
     hle/service/hid/hid_system_server.h
     hle/service/hid/hidbus.cpp
     hle/service/hid/hidbus.h
+    hle/service/hid/hidbus/hidbus_base.cpp
+    hle/service/hid/hidbus/hidbus_base.h
+    hle/service/hid/hidbus/ringcon.cpp
+    hle/service/hid/hidbus/ringcon.h
+    hle/service/hid/hidbus/starlink.cpp
+    hle/service/hid/hidbus/starlink.h
+    hle/service/hid/hidbus/stubbed.cpp
+    hle/service/hid/hidbus/stubbed.h
+    hle/service/hid/input_interpreter.cpp
+    hle/service/hid/input_interpreter.h
     hle/service/hid/irs.cpp
     hle/service/hid/irs.h
+    hle/service/hid/irsensor/clustering_processor.cpp
+    hle/service/hid/irsensor/clustering_processor.h
+    hle/service/hid/irsensor/image_transfer_processor.cpp
+    hle/service/hid/irsensor/image_transfer_processor.h
+    hle/service/hid/irsensor/ir_led_processor.cpp
+    hle/service/hid/irsensor/ir_led_processor.h
+    hle/service/hid/irsensor/moment_processor.cpp
+    hle/service/hid/irsensor/moment_processor.h
+    hle/service/hid/irsensor/pointing_processor.cpp
+    hle/service/hid/irsensor/pointing_processor.h
+    hle/service/hid/irsensor/processor_base.cpp
+    hle/service/hid/irsensor/processor_base.h
+    hle/service/hid/irsensor/tera_plugin_processor.cpp
+    hle/service/hid/irsensor/tera_plugin_processor.h
+    hle/service/hid/resource_manager.cpp
+    hle/service/hid/resource_manager.h
+    hle/service/hid/resources/abstracted_pad/abstract_battery_handler.cpp
+    hle/service/hid/resources/abstracted_pad/abstract_battery_handler.h
+    hle/service/hid/resources/abstracted_pad/abstract_button_handler.cpp
+    hle/service/hid/resources/abstracted_pad/abstract_button_handler.h
+    hle/service/hid/resources/abstracted_pad/abstract_ir_sensor_handler.cpp
+    hle/service/hid/resources/abstracted_pad/abstract_ir_sensor_handler.h
+    hle/service/hid/resources/abstracted_pad/abstract_led_handler.cpp
+    hle/service/hid/resources/abstracted_pad/abstract_led_handler.h
+    hle/service/hid/resources/abstracted_pad/abstract_mcu_handler.cpp
+    hle/service/hid/resources/abstracted_pad/abstract_mcu_handler.h
+    hle/service/hid/resources/abstracted_pad/abstract_nfc_handler.cpp
+    hle/service/hid/resources/abstracted_pad/abstract_nfc_handler.h
+    hle/service/hid/resources/abstracted_pad/abstract_pad.cpp
+    hle/service/hid/resources/abstracted_pad/abstract_pad.h
+    hle/service/hid/resources/abstracted_pad/abstract_pad_holder.cpp
+    hle/service/hid/resources/abstracted_pad/abstract_pad_holder.h
+    hle/service/hid/resources/abstracted_pad/abstract_palma_handler.cpp
+    hle/service/hid/resources/abstracted_pad/abstract_palma_handler.h
+    hle/service/hid/resources/abstracted_pad/abstract_properties_handler.cpp
+    hle/service/hid/resources/abstracted_pad/abstract_properties_handler.h
+    hle/service/hid/resources/abstracted_pad/abstract_sixaxis_handler.cpp
+    hle/service/hid/resources/abstracted_pad/abstract_sixaxis_handler.h
+    hle/service/hid/resources/abstracted_pad/abstract_vibration_handler.cpp
+    hle/service/hid/resources/abstracted_pad/abstract_vibration_handler.h
+    hle/service/hid/resources/applet_resource.cpp
+    hle/service/hid/resources/applet_resource.h
+    hle/service/hid/resources/controller_base.cpp
+    hle/service/hid/resources/controller_base.h
+    hle/service/hid/resources/debug_pad/debug_pad.cpp
+    hle/service/hid/resources/debug_pad/debug_pad.h
+    hle/service/hid/resources/debug_pad/debug_pad_types.h
+    hle/service/hid/resources/digitizer/digitizer.cpp
+    hle/service/hid/resources/digitizer/digitizer.h
+    hle/service/hid/resources/hid_firmware_settings.cpp
+    hle/service/hid/resources/hid_firmware_settings.h
+    hle/service/hid/resources/irs_ring_lifo.h
+    hle/service/hid/resources/keyboard/keyboard.cpp
+    hle/service/hid/resources/keyboard/keyboard.h
+    hle/service/hid/resources/keyboard/keyboard_types.h
+    hle/service/hid/resources/mouse/debug_mouse.cpp
+    hle/service/hid/resources/mouse/debug_mouse.h
+    hle/service/hid/resources/mouse/mouse.cpp
+    hle/service/hid/resources/mouse/mouse.h
+    hle/service/hid/resources/mouse/mouse_types.h
+    hle/service/hid/resources/npad/npad.cpp
+    hle/service/hid/resources/npad/npad.h
+    hle/service/hid/resources/npad/npad_data.cpp
+    hle/service/hid/resources/npad/npad_data.h
+    hle/service/hid/resources/npad/npad_resource.cpp
+    hle/service/hid/resources/npad/npad_resource.h
+    hle/service/hid/resources/npad/npad_types.h
+    hle/service/hid/resources/npad/npad_vibration.cpp
+    hle/service/hid/resources/npad/npad_vibration.h
+    hle/service/hid/resources/palma/palma.cpp
+    hle/service/hid/resources/palma/palma.h
+    hle/service/hid/resources/ring_lifo.h
+    hle/service/hid/resources/shared_memory_format.h
+    hle/service/hid/resources/shared_memory_holder.cpp
+    hle/service/hid/resources/shared_memory_holder.h
+    hle/service/hid/resources/six_axis/console_six_axis.cpp
+    hle/service/hid/resources/six_axis/console_six_axis.h
+    hle/service/hid/resources/six_axis/seven_six_axis.cpp
+    hle/service/hid/resources/six_axis/seven_six_axis.h
+    hle/service/hid/resources/six_axis/six_axis.cpp
+    hle/service/hid/resources/six_axis/six_axis.h
+    hle/service/hid/resources/system_buttons/capture_button.cpp
+    hle/service/hid/resources/system_buttons/capture_button.h
+    hle/service/hid/resources/system_buttons/home_button.cpp
+    hle/service/hid/resources/system_buttons/home_button.h
+    hle/service/hid/resources/system_buttons/sleep_button.cpp
+    hle/service/hid/resources/system_buttons/sleep_button.h
+    hle/service/hid/resources/system_buttons/system_button_types.h
+    hle/service/hid/resources/touch_screen/gesture.cpp
+    hle/service/hid/resources/touch_screen/gesture.h
+    hle/service/hid/resources/touch_screen/gesture_handler.cpp
+    hle/service/hid/resources/touch_screen/gesture_handler.h
+    hle/service/hid/resources/touch_screen/touch_screen.cpp
+    hle/service/hid/resources/touch_screen/touch_screen.h
+    hle/service/hid/resources/touch_screen/touch_screen_driver.cpp
+    hle/service/hid/resources/touch_screen/touch_screen_driver.h
+    hle/service/hid/resources/touch_screen/touch_screen_resource.cpp
+    hle/service/hid/resources/touch_screen/touch_screen_resource.h
+    hle/service/hid/resources/touch_screen/touch_types.h
+    hle/service/hid/resources/unique_pad/unique_pad.cpp
+    hle/service/hid/resources/unique_pad/unique_pad.h
+    hle/service/hid/resources/vibration/gc_vibration_device.cpp
+    hle/service/hid/resources/vibration/gc_vibration_device.h
+    hle/service/hid/resources/vibration/n64_vibration_device.cpp
+    hle/service/hid/resources/vibration/n64_vibration_device.h
+    hle/service/hid/resources/vibration/vibration_base.cpp
+    hle/service/hid/resources/vibration/vibration_base.h
+    hle/service/hid/resources/vibration/vibration_device.cpp
+    hle/service/hid/resources/vibration/vibration_device.h
     hle/service/hid/xcd.cpp
     hle/service/hid/xcd.h
     hle/service/hle_ipc.cpp
@@ -866,7 +976,6 @@ add_library(core STATIC
     hle/service/nvdrv/devices/nvhost_vic.h
     hle/service/nvdrv/devices/nvmap.cpp
     hle/service/nvdrv/devices/nvmap.h
-    hle/service/nvdrv/nvdata.h
     hle/service/nvdrv/nvdrv.cpp
     hle/service/nvdrv/nvdrv.h
     hle/service/nvdrv/nvdrv_interface.cpp
@@ -885,7 +994,6 @@ add_library(core STATIC
     hle/service/nvnflinger/buffer_queue_producer.cpp
     hle/service/nvnflinger/buffer_queue_producer.h
     hle/service/nvnflinger/buffer_slot.h
-    hle/service/nvnflinger/buffer_transform_flags.h
     hle/service/nvnflinger/consumer_base.cpp
     hle/service/nvnflinger/consumer_base.h
     hle/service/nvnflinger/consumer_listener.h
@@ -897,16 +1005,13 @@ add_library(core STATIC
     hle/service/nvnflinger/hos_binder_driver.h
     hle/service/nvnflinger/hos_binder_driver_server.cpp
     hle/service/nvnflinger/hos_binder_driver_server.h
-    hle/service/nvnflinger/hwc_layer.h
     hle/service/nvnflinger/nvnflinger.cpp
     hle/service/nvnflinger/nvnflinger.h
     hle/service/nvnflinger/parcel.h
-    hle/service/nvnflinger/pixel_format.h
     hle/service/nvnflinger/producer_listener.h
     hle/service/nvnflinger/status.h
     hle/service/nvnflinger/surface_flinger.cpp
     hle/service/nvnflinger/surface_flinger.h
-    hle/service/nvnflinger/ui/fence.h
     hle/service/nvnflinger/ui/graphic_buffer.cpp
     hle/service/nvnflinger/ui/graphic_buffer.h
     hle/service/nvnflinger/window.h
@@ -1163,6 +1268,8 @@ add_library(core STATIC
     memory/dmnt_cheat_vm.h
     perf_stats.cpp
     perf_stats.h
+    play_time_manager.cpp
+    play_time_manager.h
     reporter.cpp
     reporter.h
     tools/freezer.cpp
@@ -1231,7 +1338,6 @@ target_link_libraries(core PUBLIC zstd::zstd)
 
 if (ENABLE_WEB_SERVICE)
     target_compile_definitions(core PUBLIC ENABLE_WEB_SERVICE)
-    target_link_libraries(core PUBLIC web_service)
 endif()
 
 if (HAS_NCE)

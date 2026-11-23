@@ -110,10 +110,9 @@ NvResult nvhost_nvdec_common::Submit(IoctlSubmit& params, std::span<u8> data, De
     for (const auto& cmd_buffer : command_buffers) {
         const auto object = nvmap.GetHandle(cmd_buffer.memory_id);
         ASSERT_OR_EXECUTE(object, return NvResult::InvalidState;);
-        Core::Memory::CpuGuestMemory<Tegra::ChCommandHeader,
-                                     Core::Memory::GuestMemoryFlags::SafeRead>
-            cmdlist(session->process->GetMemory(), object->address + cmd_buffer.offset,
-                    cmd_buffer.word_count);
+        Tegra::ChCommandHeaderList cmdlist(session->process->GetMemory(),
+                                           object->address + cmd_buffer.offset,
+                                           cmd_buffer.word_count);
         host1x.PushEntries(fd, std::move(cmdlist));
     }
 

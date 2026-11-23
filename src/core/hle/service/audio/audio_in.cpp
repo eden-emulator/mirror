@@ -92,7 +92,7 @@ Result IAudioIn::AppendAudioInBufferAuto(InArray<AudioInBuffer, BufferAttr_HipcA
 
 Result IAudioIn::RegisterBufferEvent(OutCopyHandle<Kernel::KReadableEvent> out_event) {
     LOG_DEBUG(Service_Audio, "called");
-    *out_event = &impl->GetBufferEvent();
+    *out_event = &impl->GetBufferEvent().GetReadableEvent();
     R_SUCCEED();
 }
 

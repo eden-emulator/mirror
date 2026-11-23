@@ -9,7 +9,7 @@
 #include "core/arm/symbols.h"
 #include "core/core.h"
 #include "core/hle/kernel/k_transfer_memory.h"
-#include "core/hle/result.h"
+#include "common/result.h"
 #include "core/hle/service/cmif_serialization.h"
 #include "core/hle/service/ipc_helpers.h"
 #include "core/hle/service/jit/jit.h"

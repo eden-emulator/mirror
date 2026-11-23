@@ -7,7 +7,7 @@
 #pragma once
 
 #include "core/hle/kernel/k_event.h"
-#include "core/hle/result.h"
+#include "common/result.h"
 #include "core/hle/service/kernel_helpers.h"
 #include "core/hle/service/psc/time/clocks/context_writers.h"
 #include "core/hle/service/psc/time/clocks/standard_local_system_clock_core.h"

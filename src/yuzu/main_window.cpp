@@ -148,7 +148,7 @@ static FileSys::VirtualFile VfsDirectoryCreateFileWrapper(const FileSys::Virtual
 }
 
 // Frontend //
-#include "frontend_common/play_time_manager.h"
+#include "core/play_time_manager.h"
 
 #ifdef ENABLE_UPDATE_CHECKER
 #include "frontend_common/update_checker.h"
@@ -10430,7 +10430,7 @@ bool MainWindow::CheckFirmwarePresence() {
 }
 
 void MainWindow::SetFirmwareVersion() {
-    const auto pair = FirmwareManager::GetFirmwareVersion(*QtCommon::system.get());
+    const auto pair = Service::Set::GetInstalledFirmwareVersion(*QtCommon::system.get());
     const auto firmware_data = pair.first;
     const auto result = pair.second;
 

@@ -7,7 +7,7 @@
 #pragma once
 
 #include "core/hle/kernel/k_typed_address.h"
-#include "core/hle/result.h"
+#include "common/result.h"
 
 namespace Kernel {
 class KernelCore;

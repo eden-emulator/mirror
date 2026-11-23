@@ -30,7 +30,10 @@ class AnnounceMultiplayerSession {
 public:
     using CallbackHandle = std::shared_ptr<std::function<void(const WebService::WebResult&)>>;
 
-    AnnounceMultiplayerSession();
+    using BackendFactory = std::function<std::unique_ptr<AnnounceMultiplayerRoom::Backend>()>;
+
+    /// @param factory Creates the announce backend; a null backend is used when empty
+    explicit AnnounceMultiplayerSession(BackendFactory factory = {});
     ~AnnounceMultiplayerSession();
 
     /**
@@ -90,6 +93,7 @@ private:
     std::optional<std::jthread> announce_multiplayer_thread;
     /// Backend interface that logs fields
     std::unique_ptr<AnnounceMultiplayerRoom::Backend> backend;
+    BackendFactory backend_factory;
     std::mutex callback_mutex;
     std::atomic_bool registered = false; ///< Whether the room has been registered
 };

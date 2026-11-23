@@ -7,7 +7,6 @@
 #include <bit>
 
 #include "common/thread.h"
-#include "core/core.h"
 #include "video_core/cdma_pusher.h"
 #include "video_core/engines/maxwell_3d.h"
 #include "video_core/host1x/control.h"
@@ -25,7 +24,7 @@ CDmaPusher::CDmaPusher(Host1x::Host1x& host1x_, s32 id)
 {
     thread = std::jthread([this](std::stop_token stop_token) {
         Common::SetCurrentThreadPriority(Common::ThreadPriority::High);
-        ChCommandHeaderList command_list{host1x.System().ApplicationMemory(), 0, 0};
+        ChCommandHeaderList command_list{host1x.System().ApplicationGuestMemory(), 0, 0};
         u32 count{};
         u32 method_offset{};
         u32 mask{};

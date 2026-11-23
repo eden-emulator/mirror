@@ -10,7 +10,7 @@
 #include <string>
 
 #include "common/common_types.h"
-#include "core/frontend/emu_window.h"
+#include "common/frontend/emu_window.h"
 #include "shader_recompiler/stage.h"
 
 namespace OpenGL {

@@ -11,7 +11,7 @@
 
 #include "common/common_funcs.h"
 #include "common/common_types.h"
-#include "core/hle/result.h"
+#include "common/result.h"
 #include "core/hle/service/am/frontend/applets.h"
 
 namespace Core {

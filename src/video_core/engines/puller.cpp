@@ -8,7 +8,6 @@
 #include "common/assert.h"
 #include "common/logging.h"
 #include "common/settings.h"
-#include "core/core.h"
 #include "video_core/control/channel_state.h"
 #include "video_core/dma_pusher.h"
 #include "video_core/engines/fermi_2d.h"

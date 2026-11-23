@@ -12,7 +12,7 @@
 #include "core/hle/kernel/k_page_group.h"
 #include "core/hle/kernel/slab_helpers.h"
 #include "core/hle/kernel/svc_types.h"
-#include "core/hle/result.h"
+#include "common/result.h"
 
 union Result;
 

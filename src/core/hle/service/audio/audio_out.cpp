@@ -86,7 +86,7 @@ Result IAudioOut::AppendAudioOutBufferAuto(
 
 Result IAudioOut::RegisterBufferEvent(OutCopyHandle<Kernel::KReadableEvent> out_event) {
     LOG_DEBUG(Service_Audio, "called");
-    *out_event = &impl->GetBufferEvent();
+    *out_event = &impl->GetBufferEvent().GetReadableEvent();
     R_SUCCEED();
 }
 

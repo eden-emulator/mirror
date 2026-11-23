@@ -17,7 +17,7 @@
 #include "core/hle/kernel/kernel.h"
 #include "core/hle/kernel/svc_common.h"
 #include "core/hle/kernel/svc_results.h"
-#include "core/hle/result.h"
+#include "common/result.h"
 
 namespace Kernel {
 

@@ -18,7 +18,7 @@
 #include "core/hle/service/nvdrv/devices/nvmap.h"
 #include "core/hle/service/nvdrv/nvdrv.h"
 #include "core/hle/service/nvnflinger/buffer_queue_producer.h"
-#include "core/hle/service/nvnflinger/pixel_format.h"
+#include "common/nvnflinger/pixel_format.h"
 #include "core/hle/service/nvnflinger/ui/graphic_buffer.h"
 #include "core/hle/service/vi/container.h"
 #include "core/hle/service/vi/shared_buffer_manager.h"

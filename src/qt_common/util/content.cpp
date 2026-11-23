@@ -176,7 +176,7 @@ void InstallFirmware(const QString& location, bool recursive) {
     progress->close();
     QGuiApplication::processEvents();
 
-    const auto pair = FirmwareManager::GetFirmwareVersion(*system);
+    const auto pair = Service::Set::GetInstalledFirmwareVersion(*system);
     const auto firmware_data = pair.first;
     const std::string display_version(firmware_data.display_version.data());
 

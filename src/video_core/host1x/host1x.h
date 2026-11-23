@@ -13,6 +13,7 @@
 #include "common/common_types.h"
 
 // fd types?
+#include "video_core/host.h"
 #include "video_core/host1x/nvdec.h"
 #include "video_core/host1x/vic.h"
 
@@ -21,10 +22,6 @@
 #include "video_core/host1x/gpu_device_memory_manager.h"
 #include "video_core/host1x/syncpoint_manager.h"
 #include "video_core/memory_manager.h"
-
-namespace Core {
-class System;
-} // namespace Core
 
 namespace FFmpeg {
 class Frame;
@@ -137,10 +134,10 @@ enum class ChannelType : u32 {
 
 class Host1x {
 public:
-    explicit Host1x(Core::System& system);
+    explicit Host1x(VideoCore::Host& system);
     ~Host1x();
 
-    Core::System& System() {
+    VideoCore::Host& System() {
         return system;
     }
 
@@ -179,7 +176,7 @@ public:
         }
     }
 
-    Core::System& system;
+    VideoCore::Host& system;
     SyncpointManager syncpoint_manager;
     Tegra::MaxwellDeviceMemoryManager memory_manager;
     Tegra::MemoryManager gmmu_manager;

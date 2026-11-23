@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: Copyright 2022 yuzu Emulator Project
@@ -12,13 +12,13 @@
 #include <optional>
 #include <thread>
 
+#include "audio_core/host.h"
 #include "audio_core/renderer/system.h"
 
 namespace Core {
 namespace Timing {
 struct EventType;
 }
-class System;
 } // namespace Core
 
 namespace AudioCore::ADSP {
@@ -36,7 +36,7 @@ namespace AudioCore::Renderer {
  */
 class SystemManager {
 public:
-    explicit SystemManager(Core::System& core);
+    explicit SystemManager(Host& core);
     ~SystemManager();
 
     /**
@@ -70,7 +70,7 @@ public:
 
 private:
     /// Core system
-    Core::System& core;
+    Host& core;
     /// List of pointers to managed systems
     std::list<System*> systems{};
     /// Main worker thread for generating command lists

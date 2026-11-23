@@ -18,6 +18,7 @@
 #include "common/range_map.h"
 #include "common/scratch_buffer.h"
 #include "common/sparse_large_vector.h"
+#include "video_core/host.h"
 #include "video_core/invalidation_accumulator.h"
 #include "video_core/cache_types.h"
 #include "video_core/host1x/gpu_device_memory_manager.h"
@@ -27,18 +28,14 @@ namespace VideoCore {
 class RasterizerInterface;
 }
 
-namespace Core {
-class System;
-} // namespace Core
-
 namespace Tegra {
 
 class MemoryManager final {
 public:
-    explicit MemoryManager(Core::System& system_, u64 address_space_bits_ = 40,
+    explicit MemoryManager(VideoCore::Host& system_, u64 address_space_bits_ = 40,
                            GPUVAddr split_address = 1ULL << 34, u64 big_page_bits_ = 16,
                            u64 page_bits_ = 12);
-    explicit MemoryManager(Core::System& system_, MaxwellDeviceMemoryManager& memory_,
+    explicit MemoryManager(VideoCore::Host& system_, MaxwellDeviceMemoryManager& memory_,
                            u64 address_space_bits_ = 40, GPUVAddr split_address = 1ULL << 34,
                            u64 big_page_bits_ = 16, u64 page_bits_ = 12);
     ~MemoryManager();
@@ -178,7 +175,7 @@ private:
         GPUVAddr gpu_addr, std::size_t size,
         boost::container::small_vector<std::pair<std::conditional_t<is_gpu_address, GPUVAddr, DAddr>, std::size_t>, 32>& result) const;
 
-    Core::System& system;
+    VideoCore::Host& system;
     MaxwellDeviceMemoryManager& memory;
 
     const u64 address_space_bits;

@@ -8,13 +8,13 @@
 #include "core/hle/service/ipc_helpers.h"
 #include "core/hle/service/set/settings_types.h"
 #include "hid_core/hid_result.h"
-#include "hid_core/resource_manager.h"
-#include "hid_core/resources/hid_firmware_settings.h"
-#include "hid_core/resources/npad/npad.h"
-#include "hid_core/resources/npad/npad_types.h"
-#include "hid_core/resources/npad/npad_vibration.h"
-#include "hid_core/resources/palma/palma.h"
-#include "hid_core/resources/touch_screen/touch_screen.h"
+#include "core/hle/service/hid/resource_manager.h"
+#include "core/hle/service/hid/resources/hid_firmware_settings.h"
+#include "core/hle/service/hid/resources/npad/npad.h"
+#include "core/hle/service/hid/resources/npad/npad_types.h"
+#include "core/hle/service/hid/resources/npad/npad_vibration.h"
+#include "core/hle/service/hid/resources/palma/palma.h"
+#include "core/hle/service/hid/resources/touch_screen/touch_screen.h"
 
 namespace Service::HID {
 

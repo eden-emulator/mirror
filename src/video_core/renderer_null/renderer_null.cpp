@@ -1,8 +1,11 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2022 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "core/frontend/emu_window.h"
-#include "core/frontend/graphics_context.h"
+#include "common/frontend/emu_window.h"
+#include "common/frontend/graphics_context.h"
 #include "video_core/capture.h"
 #include "video_core/renderer_null/renderer_null.h"
 

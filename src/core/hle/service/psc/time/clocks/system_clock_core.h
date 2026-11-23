@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "core/hle/result.h"
+#include "common/result.h"
 #include "core/hle/service/psc/time/clocks/steady_clock_core.h"
 #include "core/hle/service/psc/time/common.h"
 

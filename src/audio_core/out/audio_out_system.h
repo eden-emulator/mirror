@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2022 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -11,11 +14,8 @@
 #include "audio_core/common/common.h"
 #include "audio_core/device/audio_buffers.h"
 #include "audio_core/device/device_session.h"
-#include "core/hle/service/audio/errors.h"
-
-namespace Core {
-class System;
-}
+#include "audio_core/errors.h"
+#include "audio_core/host.h"
 
 namespace Kernel {
 class KEvent;
@@ -61,7 +61,7 @@ enum class State {
  */
 class System {
 public:
-    explicit System(Core::System& system, Kernel::KEvent* event, size_t session_id);
+    explicit System(Host& system, Kernel::KEvent* event, size_t session_id);
     ~System();
 
     /**
@@ -228,7 +228,7 @@ public:
 
 private:
     /// Core system
-    Core::System& system;
+    Host& system;
     /// Process handle
     Kernel::KProcess* handle{};
     /// (Unused)

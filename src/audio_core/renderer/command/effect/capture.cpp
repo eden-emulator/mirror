@@ -7,7 +7,7 @@
 #include "audio_core/adsp/apps/audio_renderer/command_list_processor.h"
 #include "audio_core/renderer/command/effect/capture.h"
 #include "audio_core/renderer/effect/aux_.h"
-#include "core/memory.h"
+#include "common/guest_memory_access.h"
 
 namespace AudioCore::Renderer {
 /**
@@ -16,7 +16,7 @@ namespace AudioCore::Renderer {
  * @param memory   - Core memory for writing.
  * @param aux_info - Memory address pointing to the AuxInfo to reset.
  */
-static void ResetAuxBufferDsp(Core::Memory::Memory& memory, const CpuAddr aux_info) {
+static void ResetAuxBufferDsp(Core::Memory::GuestMemoryAccess& memory, const CpuAddr aux_info) {
     if (aux_info == 0) {
         LOG_ERROR(Service_Audio, "Aux info is 0!");
         return;
@@ -41,7 +41,7 @@ static void ResetAuxBufferDsp(Core::Memory::Memory& memory, const CpuAddr aux_in
  * @param update_count - If non-zero, send_info_ will be updated.
  * @return Number of samples written.
  */
-static u32 WriteAuxBufferDsp(Core::Memory::Memory& memory, const CpuAddr send_info_,
+static u32 WriteAuxBufferDsp(Core::Memory::GuestMemoryAccess& memory, const CpuAddr send_info_,
                              const CpuAddr send_buffer, u32 count_max, std::span<const s32> input,
                              const u32 write_count_, const u32 write_offset,
                              const u32 update_count) {

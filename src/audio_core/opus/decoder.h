@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: Copyright 2023 yuzu Emulator Project
@@ -8,13 +8,13 @@
 
 #include <span>
 
+#include "audio_core/host.h"
 #include "audio_core/opus/parameters.h"
 #include "common/common_types.h"
-#include "core/hle/kernel/k_transfer_memory.h"
-#include "core/hle/service/audio/errors.h"
+#include "audio_core/errors.h"
 
-namespace Core {
-class System;
+namespace Kernel {
+class KTransferMemory;
 }
 
 namespace AudioCore::OpusDecoder {
@@ -22,7 +22,7 @@ class HardwareOpus;
 
 class OpusDecoder {
 public:
-    explicit OpusDecoder(Core::System& system, HardwareOpus& hardware_opus_);
+    explicit OpusDecoder(Host& system, HardwareOpus& hardware_opus_);
     ~OpusDecoder();
 
     Result Initialize(const OpusParametersEx& params, Kernel::KTransferMemory* transfer_memory,
@@ -37,7 +37,7 @@ public:
                                            std::span<u8> output_data, bool reset);
 
 private:
-    Core::System& system;
+    Host& system;
     HardwareOpus& hardware_opus;
     std::vector<u8> shared_buffer{};
     std::span<u8> in_data{};

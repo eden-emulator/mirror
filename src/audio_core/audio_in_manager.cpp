@@ -7,15 +7,15 @@
 #include "audio_core/audio_core.h"
 #include "audio_core/audio_in_manager.h"
 #include "audio_core/audio_manager.h"
+#include "audio_core/host.h"
 #include "audio_core/in/audio_in.h"
 #include "audio_core/sink/sink_details.h"
 #include "common/settings.h"
-#include "core/core.h"
-#include "core/hle/service/audio/errors.h"
+#include "audio_core/errors.h"
 
 namespace AudioCore::AudioIn {
 
-Manager::Manager(Core::System& system_) : system{system_} {
+Manager::Manager(Host& system_) : system{system_} {
     std::iota(session_ids.begin(), session_ids.end(), 0);
     num_free_sessions = MaxInSessions;
 }

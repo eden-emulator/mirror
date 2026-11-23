@@ -14,10 +14,6 @@
 #include "common/common_types.h"
 #include "video_core/engines/engine_interface.h"
 
-namespace Core {
-class System;
-}
-
 namespace Tegra {
 class MemoryManager;
 class DmaPusher;

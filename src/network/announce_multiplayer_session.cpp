@@ -6,26 +6,18 @@
 
 #include <chrono>
 #include <future>
+#include <utility>
 #include <vector>
 #include "announce_multiplayer_session.h"
 #include "common/announce_multiplayer_room.h"
 #include "common/assert.h"
-#include "common/settings.h"
 #include "network/network.h"
-
-#ifdef ENABLE_WEB_SERVICE
-#include "web_service/announce_room_json.h"
-#endif
 
 namespace Core {
 
-AnnounceMultiplayerSession::AnnounceMultiplayerSession() {
-#ifdef ENABLE_WEB_SERVICE
-    backend = std::make_unique<WebService::RoomJson>(Settings::values.web_api_url.GetValue(),
-                                                     Settings::values.eden_username.GetValue());
-#else
-    backend = std::make_unique<AnnounceMultiplayerRoom::NullBackend>();
-#endif
+AnnounceMultiplayerSession::AnnounceMultiplayerSession(BackendFactory factory)
+    : backend_factory{std::move(factory)} {
+    UpdateCredentials();
 }
 
 WebService::WebResult AnnounceMultiplayerSession::Register() {
@@ -143,12 +135,11 @@ AnnounceMultiplayerRoom::RoomList AnnounceMultiplayerSession::GetRoomList() {
 
 void AnnounceMultiplayerSession::UpdateCredentials() {
     ASSERT_MSG(!IsRunning(), "Credentials can only be updated when session is not running");
-#ifdef ENABLE_WEB_SERVICE
-    backend = std::make_unique<WebService::RoomJson>(Settings::values.web_api_url.GetValue(),
-                                                     Settings::values.eden_username.GetValue());
-#else
-    backend = std::make_unique<AnnounceMultiplayerRoom::NullBackend>();
-#endif
+    if (backend_factory) {
+        backend = backend_factory();
+    } else {
+        backend = std::make_unique<AnnounceMultiplayerRoom::NullBackend>();
+    }
 }
 
 } // namespace Core

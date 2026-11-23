@@ -11,8 +11,8 @@
 #include <memory>
 #include <span>
 
-#include "core/frontend/emu_window.h"
-#include "core/frontend/graphics_context.h"
+#include "common/frontend/emu_window.h"
+#include "common/frontend/graphics_context.h"
 #include "input_common/main.h"
 
 struct ANativeWindow;

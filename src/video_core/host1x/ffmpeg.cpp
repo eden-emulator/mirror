@@ -12,7 +12,6 @@
 #include "common/logging.h"
 #include "common/scope_exit.h"
 #include "common/settings.h"
-#include "core/memory.h"
 #include "video_core/host1x/ffmpeg.h"
 #include "video_core/memory_manager.h"
 

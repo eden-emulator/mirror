@@ -9,16 +9,13 @@
 #include <memory>
 #include <string>
 
+#include "audio_core/host.h"
 #include "audio_core/sink/sink_stream.h"
 #include "common/common_types.h"
 
 namespace Common {
 class Event;
 }
-namespace Core {
-class System;
-}
-
 namespace AudioCore::Sink {
 
 constexpr char auto_device_name[] = "auto";
@@ -54,7 +51,7 @@ public:
      *
      * @return A pointer to the created SinkStream
      */
-    virtual SinkStream* AcquireSinkStream(Core::System& system, u32 system_channels,
+    virtual SinkStream* AcquireSinkStream(Host& system, u32 system_channels,
                                           const std::string& name, StreamType type) = 0;
 
     /**

@@ -13,6 +13,7 @@
 #include "video_core/engines/maxwell_3d.h"
 #include "video_core/engines/maxwell_dma.h"
 #include "video_core/engines/puller.h"
+#include "video_core/host.h"
 #include "video_core/memory_manager.h"
 
 namespace Tegra::Control {
@@ -37,7 +38,7 @@ void BindNvkDefaultSubchannels(ChannelState::Payload& payload) {
 
 } // Anonymous namespace
 
-ChannelState::Payload::Payload(Core::System& system, MemoryManager& memory_manager, ChannelState& channel_state)
+ChannelState::Payload::Payload(VideoCore::Host& system, MemoryManager& memory_manager, ChannelState& channel_state)
     : maxwell_3d(memory_manager)
     , fermi_2d(memory_manager)
     , kepler_compute(memory_manager)
@@ -51,7 +52,7 @@ ChannelState::ChannelState(s32 bind_id_)
     : bind_id{bind_id_}
 {}
 
-void ChannelState::Init(Core::System& system, u64 program_id_) {
+void ChannelState::Init(VideoCore::Host& system, u64 program_id_) {
     ASSERT(memory_manager);
     program_id = program_id_;
     payload.emplace(system, *memory_manager, *this);

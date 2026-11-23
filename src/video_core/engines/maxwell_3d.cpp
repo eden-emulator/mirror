@@ -10,12 +10,11 @@
 #include "common/bit_util.h"
 #include "common/scope_exit.h"
 #include "common/settings.h"
-#include "core/core.h"
-#include "core/core_timing.h"
 #include "video_core/dirty_flags.h"
 #include "video_core/engines/maxwell_3d.h"
 #include "video_core/engines/maxwell_3d.h"
 #include "video_core/gpu.h"
+#include "video_core/host.h"
 #include "video_core/memory_manager.h"
 #include "video_core/rasterizer_interface.h"
 #include "video_core/textures/texture.h"
@@ -200,7 +199,7 @@ bool Maxwell3D::IsMethodExecutable(u32 method) {
     }
 }
 
-void Maxwell3D::ProcessMacro(Core::System& system, u32 method, const u32* base_start, u32 amount, bool is_last_call) {
+void Maxwell3D::ProcessMacro(VideoCore::Host& system, u32 method, const u32* base_start, u32 amount, bool is_last_call) {
     if (executing_macro == 0) {
         // A macro call must begin by writing the macro method's register, not its argument.
         ASSERT((method % 2) == 0 && "Can't start macro execution by writing to the ARGS register");
@@ -281,7 +280,7 @@ u32 Maxwell3D::ProcessShadowRam(u32 method, u32 argument) {
     return argument;
 }
 
-void Maxwell3D::ConsumeSinkImpl(Core::System& system) {
+void Maxwell3D::ConsumeSinkImpl(VideoCore::Host& system) {
     const auto control = shadow_state.shadow_ram_control;
     if (control == Regs::ShadowRamControl::Track || control == Regs::ShadowRamControl::TrackWithFilter) {
         for (auto [method, value] : method_sink) {
@@ -372,7 +371,7 @@ void Maxwell3D::ProcessMethodCall(u32 method, u32 argument, u32 nonshadow_argume
     }
 }
 
-void Maxwell3D::CallMacroMethod(Core::System& system, u32 method, const std::vector<u32>& parameters) {
+void Maxwell3D::CallMacroMethod(VideoCore::Host& system, u32 method, const std::vector<u32>& parameters) {
     // Reset the current macro.
     executing_macro = 0;
 
@@ -385,7 +384,7 @@ void Maxwell3D::CallMacroMethod(Core::System& system, u32 method, const std::vec
     draw_manager.DrawDeferred(*this);
 }
 
-void Maxwell3D::CallMethod(Core::System& system, u32 method, u32 method_argument, bool is_last_call) {
+void Maxwell3D::CallMethod(VideoCore::Host& system, u32 method, u32 method_argument, bool is_last_call) {
     // It is an error to write to a register other than the current macro's ARG register before
     // it has finished execution.
     if (executing_macro != 0) {
@@ -405,7 +404,7 @@ void Maxwell3D::CallMethod(Core::System& system, u32 method, u32 method_argument
     ProcessMethodCall(method, argument, method_argument, is_last_call);
 }
 
-void Maxwell3D::CallMultiMethod(Core::System& system, u32 method, const u32* base_start, u32 amount, u32 methods_pending) {
+void Maxwell3D::CallMultiMethod(VideoCore::Host& system, u32 method, const u32* base_start, u32 amount, u32 methods_pending) {
     // Methods after 0xE00 are special, they're actually triggers for some microcode that was
     // uploaded to the GPU during initialization.
     if (method >= MacroRegistersStart) {
@@ -468,7 +467,7 @@ void Maxwell3D::ProcessFirmwareCall4() {
     regs.shadow_scratch[0] = 1;
 }
 
-void Maxwell3D::StampQueryResult(Core::System& system, u64 payload, bool long_query) {
+void Maxwell3D::StampQueryResult(VideoCore::Host& system, u64 payload, bool long_query) {
     const GPUVAddr sequence_address{regs.report_semaphore.Address()};
     if (long_query) {
         memory_manager.Write<u64>(sequence_address + sizeof(u64), system.GPU().GetTicks());

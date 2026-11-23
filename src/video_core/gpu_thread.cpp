@@ -8,18 +8,18 @@
 #include "common/scope_exit.h"
 #include "common/settings.h"
 #include "common/thread.h"
-#include "core/core.h"
-#include "core/frontend/graphics_context.h"
+#include "common/frontend/graphics_context.h"
 #include "video_core/control/scheduler.h"
 #include "video_core/dma_pusher.h"
 #include "video_core/gpu.h"
 #include "video_core/gpu_thread.h"
+#include "video_core/host.h"
 #include "video_core/host1x/host1x.h"
 #include "video_core/renderer_base.h"
 
 namespace VideoCommon::GPUThread {
 
-ThreadManager::ThreadManager(Core::System& system_)
+ThreadManager::ThreadManager(VideoCore::Host& system_)
     : system{system_}
 {}
 

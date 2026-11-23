@@ -14,10 +14,7 @@
 #include "common/logging.h"
 #include "video_core/engines/engine_interface.h"
 #include "video_core/engines/engine_upload.h"
-
-namespace Core {
-class System;
-}
+#include "video_core/host.h"
 
 namespace Tegra {
 class MemoryManager;
@@ -30,12 +27,12 @@ public:
     ~Nv01Timer() noexcept override {}
 
     /// Write the value to the register identified by method.
-    void CallMethod(Core::System& system, u32 method, u32 method_argument, bool is_last_call) override {
+    void CallMethod(VideoCore::Host& system, u32 method, u32 method_argument, bool is_last_call) override {
         LOG_DEBUG(HW_GPU, "method={}, argument={}, is_last_call={}", method, method_argument, is_last_call);
     }
 
     /// Write multiple values to the register identified by method.
-    void CallMultiMethod(Core::System& system, u32 method, const u32* base_start, u32 amount, u32 methods_pending) override {
+    void CallMultiMethod(VideoCore::Host& system, u32 method, const u32* base_start, u32 amount, u32 methods_pending) override {
         LOG_DEBUG(HW_GPU, "method={}, base_start={:P}, amount={}, pending={}", method, (const void*) base_start, amount, methods_pending);
     }
 
@@ -43,6 +40,6 @@ public:
         INSERT_PADDING_BYTES_NOINIT(0x48);
     } regs{};
 private:
-    void ConsumeSinkImpl(Core::System& system) override {}
+    void ConsumeSinkImpl(VideoCore::Host& system) override {}
 };
 }

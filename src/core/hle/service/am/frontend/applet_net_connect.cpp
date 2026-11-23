@@ -6,7 +6,7 @@
 #include "common/logging.h"
 #include "core/core.h"
 #include "core/frontend/applets/net_connect.h"
-#include "core/hle/result.h"
+#include "common/result.h"
 #include "core/hle/service/am/am.h"
 #include "core/hle/service/am/applet_data_broker.h"
 #include "core/hle/service/am/frontend/applet_net_connect.h"

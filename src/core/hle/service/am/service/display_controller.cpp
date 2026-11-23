@@ -4,7 +4,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "core/hle/result.h"
+#include "common/result.h"
 #include "core/hle/service/am/applet.h"
 #include "core/hle/service/am/service/display_controller.h"
 #include "core/hle/service/cmif_serialization.h"

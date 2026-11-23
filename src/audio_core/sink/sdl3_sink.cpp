@@ -10,11 +10,11 @@
 #include <SDL3/SDL.h>
 
 #include "audio_core/common/common.h"
+#include "audio_core/host.h"
 #include "audio_core/sink/sdl3_sink.h"
 #include "audio_core/sink/sink_stream.h"
 #include "common/logging.h"
 #include "common/scope_exit.h"
-#include "core/core.h"
 
 namespace AudioCore::Sink {
 
@@ -83,7 +83,7 @@ public:
      * @param event            - Event used only for audio renderer, signalled on buffer consume.
      */
     SDLSinkStream(u32 device_channels_, u32 system_channels_, const std::string& output_device,
-                  const std::string& input_device, StreamType type_, Core::System& system_)
+                  const std::string& input_device, StreamType type_, Host& system_)
         : SinkStream{system_, type_} {
         system_channels = system_channels_;
         device_channels = device_channels_;
@@ -241,7 +241,7 @@ SDLSink::SDLSink(std::string_view target_device_name) {
 
 SDLSink::~SDLSink() = default;
 
-SinkStream* SDLSink::AcquireSinkStream(Core::System& system, u32 system_channels_,
+SinkStream* SDLSink::AcquireSinkStream(Host& system, u32 system_channels_,
                                        const std::string&, StreamType type) {
     system_channels = system_channels_;
     SinkStreamPtr& stream = sink_streams.emplace_back(std::make_unique<SDLSinkStream>(

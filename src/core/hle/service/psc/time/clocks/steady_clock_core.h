@@ -8,7 +8,7 @@
 
 #include <chrono>
 
-#include "core/hle/result.h"
+#include "common/result.h"
 #include "core/hle/service/psc/time/common.h"
 
 namespace Service::PSC::Time {

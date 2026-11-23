@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2022 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -5,12 +8,9 @@
 
 #include <span>
 
+#include "audio_core/host.h"
 #include "audio_core/renderer/system.h"
-#include "core/hle/service/audio/errors.h"
-
-namespace Core {
-class System;
-}
+#include "audio_core/errors.h"
 
 namespace Kernel {
 class KTransferMemory;
@@ -28,7 +28,7 @@ class Manager;
  */
 class Renderer {
 public:
-    explicit Renderer(Core::System& system, Manager& manager, Kernel::KEvent* rendered_event);
+    explicit Renderer(Host& system, Manager& manager, Kernel::KEvent* rendered_event);
 
     /**
      * Initialize the renderer.
@@ -84,7 +84,7 @@ public:
 
 private:
     /// System core
-    Core::System& core;
+    Host& core;
     /// Manager this renderer is registered with
     Manager& manager;
     /// Is the audio renderer initialized?

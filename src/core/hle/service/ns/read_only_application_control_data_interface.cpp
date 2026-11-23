@@ -17,7 +17,7 @@
 #include "core/file_sys/vfs/vfs.h"
 #include "core/hle/kernel/k_process.h"
 #include "core/hle/kernel/k_transfer_memory.h"
-#include "core/hle/result.h"
+#include "common/result.h"
 #include "core/hle/service/cmif_serialization.h"
 #include "core/hle/service/cmif_types.h"
 #include "core/hle/service/hle_ipc.h"

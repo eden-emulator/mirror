@@ -18,8 +18,7 @@
 #include <ranges>
 #include "common/scope_exit.h"
 #include "common/settings.h"
-#include "core/core_timing.h"
-#include "core/frontend/graphics_context.h"
+#include "common/frontend/graphics_context.h"
 #include "video_core/capture.h"
 #include "video_core/gpu.h"
 #include "video_core/present.h"

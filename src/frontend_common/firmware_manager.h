@@ -14,7 +14,7 @@
 #include <core/hle/service/am/frontend/applet_mii_edit.h>
 #include <string>
 
-#include "core/hle/result.h"
+#include "common/result.h"
 #include "core/hle/service/set/settings_types.h"
 #include "core/hle/service/set/system_settings_server.h"
 
@@ -93,16 +93,5 @@ FirmwareCheckResult VerifyFirmware(Core::System &system);
  * @param system The system to check firmware on.
  * @return A pair of the firmware version format and result code.
  */
-inline std::pair<Service::Set::FirmwareVersionFormat, Result> GetFirmwareVersion(Core::System &system)
-{
-    Service::Set::FirmwareVersionFormat firmware_data{};
-    const auto result
-        = Service::Set::GetFirmwareVersionImpl(firmware_data,
-                                               system,
-                                               Service::Set::GetFirmwareVersionType::Version2);
-
-    return {firmware_data, result};
-}
-
 // TODO(crueter): GET AS STRING
 }

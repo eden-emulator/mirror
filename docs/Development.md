@@ -24,6 +24,16 @@ If the work is licensed/vendored from other people or projects, you may omit the
 
 For more information on the license header script, run `.ci/license-header.sh -h`.
 
+## Library dependencies
+
+Libraries must only depend downwards, never on a library that links them. In particular:
+
+- `common` depends on nothing else in the tree.
+- `audio_core`, `video_core`, `hid_core`, `network` and `input_common` must not include `core` headers or link against `core`.
+- `core` links them privately.
+
+When one of those libraries needs something from the emulated system, add it to its host interface (`AudioCore::Host` in `audio_core/host.h`, `VideoCore::Host` in `video_core/host.h`) and implement it in `Core::System`. Guest memory is reached through `Core::Memory::GuestMemoryAccess` in `common/guest_memory_access.h`. Code that needs the kernel or HLE services belongs in `core`.
+
 ## Adding new settings
 
 When adding new settings, use `tr("Setting:")` if the setting is meant to be a field, otherwise use `tr("Setting")` if the setting is meant to be a Yes/No or checkmark type of setting, see [this short style guide](https://learn.microsoft.com/en-us/style-guide/punctuation/colons#in-ui).

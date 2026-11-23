@@ -32,10 +32,12 @@
 #include "core/file_sys/vfs/vfs_concat.h"
 #include "core/file_sys/vfs/vfs_real.h"
 #include "core/gpu_dirty_memory_manager.h"
+#include "core/hle/kernel/k_event.h"
 #include "core/hle/kernel/k_memory_manager.h"
 #include "core/hle/kernel/k_process.h"
 #include "core/hle/kernel/k_resource_limit.h"
 #include "core/hle/kernel/k_scheduler.h"
+#include "core/hle/kernel/k_transfer_memory.h"
 #include "core/hle/kernel/kernel.h"
 #include "core/hle/kernel/physical_core.h"
 #include "core/hle/service/acc/profile_manager.h"
@@ -950,6 +952,69 @@ const Service::SM::ServiceManager& System::ServiceManager() const {
 
 void System::RegisterCoreThread(std::size_t id) {
     impl->kernel.RegisterCoreThread(id);
+}
+
+const u8* System::DeviceMemoryBase() {
+    return impl->device_memory->buffer.BackingBasePointer();
+}
+
+Memory::GuestMemoryAccess& System::ApplicationGuestMemory() {
+    return ApplicationMemory();
+}
+
+std::chrono::nanoseconds System::GlobalTimeNs() {
+    return CoreTiming().GetGlobalTimeNs();
+}
+
+std::chrono::microseconds System::GlobalTimeUs() {
+    return CoreTiming().GetGlobalTimeUs();
+}
+
+std::shared_ptr<Timing::EventType> System::CreateTimingEvent(std::string name,
+                                                             TimedCallback&& callback) {
+    return Timing::CreateEvent(std::move(name), std::move(callback));
+}
+
+void System::ScheduleLoopingEvent(std::chrono::nanoseconds start_time,
+                                  std::chrono::nanoseconds resched_time,
+                                  const std::shared_ptr<Timing::EventType>& event) {
+    CoreTiming().ScheduleLoopingEvent(start_time, resched_time, event);
+}
+
+void System::UnscheduleEvent(const std::shared_ptr<Timing::EventType>& event) {
+    CoreTiming().UnscheduleEvent(event, {});
+}
+
+void System::SignalEvent(Kernel::KEvent& event) {
+    event.Signal(Kernel());
+}
+
+void System::ClearEvent(Kernel::KEvent& event) {
+    event.Clear(Kernel());
+}
+
+void System::OpenProcess(Kernel::KProcess& process) {
+    process.Open(Kernel());
+}
+
+void System::CloseProcess(Kernel::KProcess& process) {
+    process.Close(Kernel());
+}
+
+Memory::GuestMemoryAccess& System::ProcessMemory(Kernel::KProcess& process) {
+    return process.GetMemory();
+}
+
+Common::ProcessAddress System::TransferMemoryAddress(Kernel::KTransferMemory& transfer_memory) {
+    return transfer_memory.GetSourceAddress();
+}
+
+u64 System::GPUTicks() {
+    return CoreTiming().GetGPUTicks();
+}
+
+void System::EndGameFrame() {
+    GetPerfStats().EndGameFrame();
 }
 
 void System::RegisterHostThread() {

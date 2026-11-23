@@ -18,10 +18,6 @@
 #include "video_core/renderer_opengl/gl_shader_manager.h"
 #include "video_core/renderer_opengl/gl_state_tracker.h"
 
-namespace Core {
-class System;
-} // namespace Core
-
 namespace Core::Frontend {
 class EmuWindow;
 }

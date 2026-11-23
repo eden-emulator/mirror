@@ -10,18 +10,15 @@
 
 #include "audio_core/adsp/adsp.h"
 #include "audio_core/audio_manager.h"
+#include "audio_core/host.h"
 #include "audio_core/sink/sink.h"
-
-namespace Core {
-class System;
-}
 
 namespace AudioCore {
 
 /// @brief Main audio class, stored inside the core, and holding the audio manager, all sinks, and the ADSP.
 class AudioCore {
 public:
-    explicit AudioCore(Core::System& system);
+    explicit AudioCore(Host& system);
     ~AudioCore();
 
     /**

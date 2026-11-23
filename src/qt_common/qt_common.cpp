@@ -19,7 +19,7 @@
 
 #include <QGuiApplication>
 #include <QStringLiteral>
-#include "core/frontend/emu_window.h"
+#include "common/frontend/emu_window.h"
 #include "qt_common/util/meta.h"
 
 #include <QFile>

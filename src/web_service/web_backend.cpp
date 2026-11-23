@@ -17,7 +17,7 @@
 
 #include "common/logging.h"
 #include "web_service/web_backend.h"
-#include "web_service/web_result.h"
+#include "common/web_result.h"
 
 import hydrocarbon;
 

@@ -9,7 +9,6 @@
 #include <cstddef>
 
 #include "common/common_types.h"
-#include "core/core.h"
 #include "video_core/control/channel_state.h"
 #include "video_core/dirty_flags.h"
 #include "video_core/engines/maxwell_3d.h"

@@ -12,8 +12,7 @@
 #include "common/fixed_point.h"
 #include "common/logging.h"
 #include "common/scratch_buffer.h"
-#include "core/guest_memory.h"
-#include "core/memory.h"
+#include "common/guest_memory_access.h"
 
 namespace AudioCore::Renderer {
 
@@ -26,7 +25,7 @@ constexpr u32 TempBufferSize = 0x3F00;
 /// @param req        - Information for how to decode.
 /// @return Number of samples decoded.
 template <typename T>
-static u32 DecodePcm(Core::Memory::Memory& memory, std::span<s16> out_buffer, const DecodeArg& req) {
+static u32 DecodePcm(Core::Memory::GuestMemoryAccess& memory, std::span<s16> out_buffer, const DecodeArg& req) {
     constexpr s32 min{(std::numeric_limits<s16>::min)()};
     constexpr s32 max{(std::numeric_limits<s16>::max)()};
 
@@ -48,7 +47,7 @@ static u32 DecodePcm(Core::Memory::Memory& memory, std::span<s16> out_buffer, co
                            (((req.start_offset + req.offset) * channel_count) * sizeof(T))};
         const u64 size{channel_count * samples_to_decode};
 
-        Core::Memory::CpuGuestMemory<T, Core::Memory::GuestMemoryFlags::UnsafeRead> samples(
+        Core::Memory::GuestAccessMemory<T, Core::Memory::GuestMemoryFlags::UnsafeRead> samples(
             memory, source, size);
         if constexpr (std::is_floating_point_v<T>) {
             for (u32 i = 0; i < samples_to_decode; i++) {
@@ -71,7 +70,7 @@ static u32 DecodePcm(Core::Memory::Memory& memory, std::span<s16> out_buffer, co
         }
 
         const VAddr source{req.buffer + ((req.start_offset + req.offset) * sizeof(T))};
-        Core::Memory::CpuGuestMemory<T, Core::Memory::GuestMemoryFlags::UnsafeRead> samples(
+        Core::Memory::GuestAccessMemory<T, Core::Memory::GuestMemoryFlags::UnsafeRead> samples(
             memory, source, samples_to_decode);
 
         if constexpr (std::is_floating_point_v<T>) {
@@ -94,7 +93,7 @@ static u32 DecodePcm(Core::Memory::Memory& memory, std::span<s16> out_buffer, co
 /// @param out_buffer - Output mix buffer to receive the samples.
 /// @param req        - Information for how to decode.
 /// @return Number of samples decoded.
-static u32 DecodeAdpcm(Core::Memory::Memory& memory, std::span<s16> out_buffer, const DecodeArg& req) {
+static u32 DecodeAdpcm(Core::Memory::GuestMemoryAccess& memory, std::span<s16> out_buffer, const DecodeArg& req) {
     constexpr u32 SamplesPerFrame{14};
     constexpr u32 NibblesPerFrame{16};
 
@@ -131,7 +130,7 @@ static u32 DecodeAdpcm(Core::Memory::Memory& memory, std::span<s16> out_buffer, 
     }
 
     const auto size{(std::max)((samples_to_process / 8U) * SamplesPerFrame, 8U)};
-    Core::Memory::CpuGuestMemory<u8, Core::Memory::GuestMemoryFlags::UnsafeRead> wavebuffer(memory, req.buffer + position_in_frame / 2, size);
+    Core::Memory::GuestAccessMemory<u8, Core::Memory::GuestMemoryFlags::UnsafeRead> wavebuffer(memory, req.buffer + position_in_frame / 2, size);
 
     auto context = req.adpcm_context;
     auto header = context->header;
@@ -211,7 +210,7 @@ static u32 DecodeAdpcm(Core::Memory::Memory& memory, std::span<s16> out_buffer, 
 ///
 /// @param memory - Core memory to read data from.
 /// @param args   - The wavebuffer data, and information for how to decode it.
-void DecodeFromWaveBuffers(Core::Memory::Memory& memory, const DecodeFromWaveBuffersArgs& args) {
+void DecodeFromWaveBuffers(Core::Memory::GuestMemoryAccess& memory, const DecodeFromWaveBuffersArgs& args) {
     constexpr auto EndWaveBuffer = [](auto& voice_state, auto& wavebuffer, auto& index, auto& played_samples, auto& consumed) -> void {
         voice_state.wave_buffer_valid[index] = false;
         voice_state.loop_count = 0;

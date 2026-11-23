@@ -10,17 +10,14 @@
 #include <string_view>
 #include <vector>
 
+#include "audio_core/host.h"
 #include "audio_core/sink/sink.h"
 #include "audio_core/sink/sink_stream.h"
-
-namespace Core {
-class System;
-} // namespace Core
 
 namespace AudioCore::Sink {
 class NullSinkStreamImpl final : public SinkStream {
 public:
-    explicit NullSinkStreamImpl(Core::System& system_, StreamType type_)
+    explicit NullSinkStreamImpl(Host& system_, StreamType type_)
         : SinkStream{system_, type_} {}
     ~NullSinkStreamImpl() override {}
     void AppendBuffer(SinkBuffer&, std::span<s16>) override {}
@@ -37,7 +34,7 @@ public:
     explicit NullSink(std::string_view) {}
     ~NullSink() override = default;
 
-    SinkStream* AcquireSinkStream(Core::System& system, u32, const std::string&,
+    SinkStream* AcquireSinkStream(Host& system, u32, const std::string&,
                                   StreamType type) override {
         if (null_sink == nullptr) {
             null_sink = std::make_unique<NullSinkStreamImpl>(system, type);
