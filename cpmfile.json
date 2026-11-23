@@ -11,6 +11,9 @@
         "hash": "681d97be4386767662e230b2e7c9754d45e709cc5db4e747c23c27d1f5b0e87770bdf19b0bc44dcb0e8349324887bbb8fffb432098f4d0ce74a5043021a90afc",
         "min_version": "1.87",
         "package": "Boost",
+        "patches": [
+            "0001-fix-clang-cl-cross-comp.patch"
+        ],
         "repo": "eden-emulator/ext-boost",
         "version": "1.92.0"
     },

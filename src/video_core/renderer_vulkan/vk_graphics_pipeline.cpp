@@ -30,10 +30,12 @@
 #include "video_core/gpu_logging/gpu_logging.h"
 #include "common/settings.h"
 
-#if defined(_MSC_VER) && defined(NDEBUG)
-#define LAMBDA_FORCEINLINE [[msvc::forceinline]]
-#else
+#ifdef NDEBUG
 #define LAMBDA_FORCEINLINE
+#elif defined(_MSC_VER)
+#define LAMBDA_FORCEINLINE [[msvc::forceinline]]
+#elif defined(__GNUC__) || defined(__clang__)
+#define LAMBDA_FORCEINLINE [[gnu::always_inline]]
 #endif
 
 namespace Vulkan {

@@ -109,3 +109,59 @@ And finally, run the compiled executable with QEMU!
 ```sh
 qemu-aarch64 build/aarch64/bin/eden
 ```
+
+## Windows from Linux
+
+You can compile Eden for Windows from a Linux host in one of two ways.
+
+### MinGW
+
+This method is currently unsupported. Check back later.
+
+### clang-cl (MSVC)
+
+This compiles Eden in the same way that our native Windows MSVC builds are made.
+
+First off, you *must* have a host Qt installed. If you want localization, install Qt Tools as well. Take note of where it's located; usually this will be `/usr/lib/qt`, or `/usr/lib64/qt6`, or something along those lines. You will also need a Clang 21+ build with `clang-cl` support included. Most distributions will have this by default.
+
+Finally, set up an xwin root. You can set this up wherever; automated setup may come in the future. Download the latest [xwin](https://github.com/Jake-Shadle/xwin/releases/latest) for your architecture, then run:
+
+```sh
+/path/to/xwin --accept-license --arch x86_64 --manifest-version 18 \
+  splat --preserve-ms-arch-notation --include-debug-libs --output xwin
+```
+
+A good place to put this would be in Eden's `.cache` directory.
+
+Once all of those are setup, configure:
+
+```sh
+cmake -S . -B build/msvc -DXWIN_PATH=$PWD/.cache/xwin --toolchain CMakeModules/toolchains/MSVCCrossAMD64.cmake \
+    -GNinja -DQT_HOST_PATH=/usr/lib64/qt6 -DCMAKE_BUILD_TYPE=Release
+```
+
+- `XWIN_PATH` is wherever you put the xwin splat.
+- `QT_HOST_PATH` is the host installation of Qt 6 you noted earlier.
+- This can be a bit slow during incremental builds, so `-DUSE_CCACHE=ON` is recommended.
+
+From there, just build as normal:
+
+```sh
+cmake --build build/msvc
+```
+
+Your Windows executables will then be in `build/msvc/bin`. You can run these through WINE or transfer them to a Windows PC.
+
+#### ARM
+
+You can do the same with an ARM target:
+
+```sh
+/path/to/xwin --accept-license --arch aarch64 --manifest-version 18 \
+  splat --preserve-ms-arch-notation --include-debug-libs --output xwin
+
+cmake -S . -B build/msvc-arm -DXWIN_PATH=$PWD/.cache/xwin --toolchain CMakeModules/toolchains/MSVCCrossARM64.cmake \
+    -GNinja -DQT_HOST_PATH=/usr/lib64/qt6 -DCMAKE_BUILD_TYPE=Release
+
+cmake --build build/msvc-arm
+```

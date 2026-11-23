@@ -230,16 +230,10 @@ else()
     endif()
 endif()
 
-if(CXX_CLANG)
+if(CXX_CLANG AND NOT MSVC)
     target_compile_options(common PRIVATE
         $<$<COMPILE_LANGUAGE:C,CXX>:-fsized-deallocation>
         $<$<COMPILE_LANGUAGE:C,CXX>:-Wunreachable-code-aggressive>)
-    target_compile_definitions(
-        common
-        PRIVATE
-        # Clang 14 and earlier have errors when explicitly instantiating
-        # Settings::Setting
-        $<$<VERSION_LESS:$<CXX_COMPILER_VERSION>,15>:CANNOT_EXPLICITLY_INSTANTIATE>)
 endif()
 
 if (BOOST_NO_HEADERS)

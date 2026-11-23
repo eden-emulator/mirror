@@ -109,7 +109,8 @@ std::optional<SubresourceBase> ImageBase::TryFindBase(GPUVAddr other_addr) const
 }
 
 ImageViewId ImageBase::FindView(const ImageViewInfo& view_info) const noexcept {
-    const auto it = std::ranges::find(image_view_infos, view_info);
+    // FIXME: MSVC vectorized find dies when you try to use std::ranges::find.
+    const auto it = std::ranges::find_if(image_view_infos, [&](const ImageViewInfo& t_info){ return t_info == view_info; });
     if (it == image_view_infos.end()) {
         return ImageViewId{};
     }

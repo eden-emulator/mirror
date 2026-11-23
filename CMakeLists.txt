@@ -202,13 +202,8 @@ endif()
 
 # Set runtime library to MD/MDd for all configurations
 if(MSVC)
-    if (YUZU_USE_BUNDLED_QT AND ARCHITECTURE_arm64)
-        set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
-        set(libflag MT)
-    else()
-        set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
-        set(libflag MD)
-    endif()
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
+    set(libflag MD)
 
     # Force all projects (including external dependencies) to use the same runtime
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /${libflag}")
@@ -389,7 +384,9 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
-find_package(RenderDoc MODULE)
+if (NOT CMAKE_CROSSCOMPILING)
+    find_package(RenderDoc MODULE)
+endif()
 
 # openssl funniness
 if (YUZU_USE_BUNDLED_OPENSSL)
@@ -639,6 +636,39 @@ if (ENABLE_QT)
     set(QT_MAJOR_VERSION 6)
     # Qt6 sets cxx_std_17 and we need to undo that
     set_target_properties(Qt6::Platform PROPERTIES INTERFACE_COMPILE_FEATURES "")
+
+    if (CMAKE_CROSSCOMPILING)
+        foreach(exe moc rcc uic)
+            if(TARGET Qt6::${exe})
+                message(STATUS "Target: ${exe}")
+                get_target_property(${exe}_path Qt6::${exe} IMPORTED_LOCATION)
+                message(STATUS "  Before: ${${exe}_path}")
+
+                set(libexec_path "${QT_HOST_PATH}/libexec/${exe}")
+                set(bin_path "${QT_HOST_PATH}/libexec/${exe}")
+
+                # set CMAKE_AUTO{MOC,RCC,UIC}_EXECUTABLE vars
+                string(TOUPPER "${exe}" upper_exe)
+
+                if (EXISTS "${libexec_path}")
+                    set_target_properties(Qt6::${exe} PROPERTIES IMPORTED_LOCATION "${libexec_path}")
+
+                    # cmake moment
+                    set(CMAKE_AUTO${upper_exe}_EXECUTABLE "${QT_HOST_PATH}/libexec/${exe}" CACHE STRING "" FORCE)
+                elseif(EXISTS "${bin_path}")
+                    set_target_properties(Qt6::${exe} PROPERTIES IMPORTED_LOCATION "${bin_path}")
+
+                    # cmake moment
+                    set(CMAKE_AUTO${upper_exe}_EXECUTABLE "${QT_HOST_PATH}/bin/${exe}" CACHE STRING "" FORCE)
+                else()
+                    # TODO: handle
+                endif()
+
+                get_target_property(${exe}_path Qt6::${exe} IMPORTED_LOCATION)
+                message(STATUS "  After: ${${exe}_path}")
+            endif()
+        endforeach()
+    endif()
 
     ## Qt Externals ##
 
