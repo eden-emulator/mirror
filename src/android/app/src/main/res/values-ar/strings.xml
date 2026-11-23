@@ -966,7 +966,7 @@
     <!-- ROM loading errors -->
     <string name="loader_error_encrypted">ROM الخاص بك مشفر</string>
     <string name="loader_error_encrypted_roms_description"><![CDATA[يرجى اتباع الإرشادات لإعادة نسخ  <a href=\"https://yuzu-mirror.github.io/help/quickstart/#dumping-physical-titles-game-cards\">بطاقات الألعاب </a> أو <a href=\"https://yuzu-mirror.github.io/help/quickstart/#dumping-digital-titles-eshop\">الألعاب المثبتة</a>.]]></string>
-    <string name="loader_error_encrypted_keys_description"><![CDATA[تأكد من تثبيت <a href=\"https://yuzu-emu.org/help/quickstart/#dumping-prodkeys-and-titlekeys\">prod.keys</a>]]></string>
+    <string name="loader_error_encrypted_keys_description"><![CDATA[تأكد من تثبيت <a href=\"https://yuzu-mirror.github.io/help/quickstart/#dumping-prodkeys-and-titlekeys\">prod.keys</a>]]></string>
     <string name="loader_error_video_core">حدث خطأ أثناء تهيئة نواة الفيديو</string>
     <string name="loader_error_video_core_description">عادةً ما يكون هذا ناتجًا عن برنامج تشغيل وحدة معالجة الرسومات غير متوافق. قد يؤدي تثبيت برنامج تشغيل مخصص لوحدة معالجة الرسومات إلى حل هذه المشكلة.</string>
     <string name="loader_error_file_not_found">ملف ROM غير موجود</string>

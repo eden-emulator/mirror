@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: Copyright 2020 yuzu Emulator Project
@@ -6,7 +6,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later AND MIT
 
 // This files contains code from Ryujinx
-// A copy of the code can be obtained from https://github.com/Ryujinx/Ryujinx
+// A copy of the code can be obtained from https://git.eden-emu.dev/archive/ryujinx
 // The sections using code from Ryujinx are marked with a link to the original version
 
 #include <algorithm>
@@ -295,7 +295,7 @@ template <u32 GOB_EXTENT>
 
 [[nodiscard]] constexpr u32 AlignLayerSize(u32 size_bytes, Extent3D size, Extent3D block,
                                            u32 tile_size_y, u32 tile_width_spacing) {
-    // https://github.com/Ryujinx/Ryujinx/blob/1c9aba6de1520aea5480c032e0ff5664ac1bb36f/Ryujinx.Graphics.Texture/SizeCalculator.cs#L134
+    // https://git.eden-emu.dev/archive/ryujinx/src/commit/1c9aba6de1520aea5480c032e0ff5664ac1bb36f/Ryujinx.Graphics.Texture/SizeCalculator.cs#L134
     if (tile_width_spacing > 0) {
         const u32 alignment_log2 = GOB_SIZE_SHIFT + tile_width_spacing + block.height + block.depth;
         return Common::AlignUpLog2(size_bytes, alignment_log2);
@@ -453,7 +453,7 @@ template <u32 GOB_EXTENT>
 }
 
 [[nodiscard]] Extent2D PitchLinearAlignedSize(const ImageInfo& info) {
-    // https://github.com/Ryujinx/Ryujinx/blob/1c9aba6de1520aea5480c032e0ff5664ac1bb36f/Ryujinx.Graphics.Texture/SizeCalculator.cs#L212
+    // https://git.eden-emu.dev/archive/ryujinx/src/commit/1c9aba6de1520aea5480c032e0ff5664ac1bb36f/Ryujinx.Graphics.Texture/SizeCalculator.cs#L212
     static constexpr u32 STRIDE_ALIGNMENT = 32;
     ASSERT(info.type == ImageType::Linear);
     const Extent2D num_tiles{
@@ -468,7 +468,7 @@ template <u32 GOB_EXTENT>
 }
 
 [[nodiscard]] Extent3D BlockLinearAlignedSize(const ImageInfo& info, u32 level) {
-    // https://github.com/Ryujinx/Ryujinx/blob/1c9aba6de1520aea5480c032e0ff5664ac1bb36f/Ryujinx.Graphics.Texture/SizeCalculator.cs#L176
+    // https://git.eden-emu.dev/archive/ryujinx/src/commit/1c9aba6de1520aea5480c032e0ff5664ac1bb36f/Ryujinx.Graphics.Texture/SizeCalculator.cs#L176
     ASSERT(info.type != ImageType::Linear);
     const Extent3D size = AdjustMipSize(info.size, level);
     const Extent3D num_tiles{

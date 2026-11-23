@@ -119,7 +119,7 @@
 #        define CTX_PC (mctx.mc_rip)
 #        define CTX_SP (mctx.mc_rsp)
 #    elif defined(__OpenBSD__)
-// https://github.com/openbsd/src/blob/master/sys/arch/x86_64/include/signal.h
+// https://github.com/openbsd/src/blob/master/sys/arch/amd64/include/signal.h
 #        define CTX_PC (ucontext->sc_rip)
 #        define CTX_SP (ucontext->sc_rsp)
 #    elif defined(__sun__)

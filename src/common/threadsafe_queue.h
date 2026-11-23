@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: 2010 Dolphin Emulator Project
@@ -55,7 +55,6 @@ public:
         // cv_mutex must be held or else there will be a missed wakeup if the other thread is in the
         // line before cv.wait
         // TODO(bunnei): This can be replaced with C++20 waitable atomics when properly supported.
-        // See discussion on https://github.com/yuzu-emu/yuzu/pull/3173 for details.
         std::scoped_lock lock{cv_mutex};
         cv.notify_one();
     }

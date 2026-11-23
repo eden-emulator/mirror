@@ -120,7 +120,7 @@ The following are optional to define:
 - `bundled`: Force the usage of a bundled package. Useful for packages where the system package is broken or nonexistent; e.g. external fragment shaders or data archives.
   - Note that this will conflict with `CPMUTIL_FORCE_SYSTEM`; for this reason, when using non-library archives, it may be best to allow the user to download and extract the archive manually and specify a local directory to it.
 - `find_args`: Additional arguments passed to `find_package`, e.g. `MODULE`
-- `patches`: Array of in-tree patches to apply to the downloaded source code. See [#Patches](TODO).
+- `patches`: Array of in-tree patches to apply to the downloaded source code. See [Patches](#patches).
 - `options`: Array of CMake options to apply before configuring the package, e.g. `"FMT_TEST ON"`.
 
 ### Versioning

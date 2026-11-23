@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: 2021 yuzu Emulator Project
 // SPDX-FileCopyrightText: 2021 Skyline Team and Contributors
 // SPDX-License-Identifier: GPL-3.0-or-later
@@ -80,7 +83,7 @@ enum class NvResult : u32 {
 };
 
 // obtained from
-// https://github.com/skyline-emu/skyline/blob/nvdec-dev/app/src/main/cpp/skyline/services/nvdrv/devices/nvhost/ctrl.h#L47
+// https://github.com/strato-emu/strato/blob/master/app/src/main/cpp/skyline/services/nvdrv/devices/nvhost/ctrl.h#L47
 enum class EventState {
     Available = 0,
     Waiting = 1,
