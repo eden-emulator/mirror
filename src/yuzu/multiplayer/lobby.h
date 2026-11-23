@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: Copyright 2017 Citra Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
@@ -12,13 +12,14 @@
 #include <QStandardItemModel>
 #include "common/announce_multiplayer_room.h"
 #include "network/announce_multiplayer_session.h"
-#include "network/network.h"
+#include "network/room_member.h"
 #include "yuzu/multiplayer/validation.h"
 
 namespace Ui {
 class Lobby;
 }
 
+class GameListModel;
 class LobbyModel;
 class LobbyFilterProxyModel;
 
@@ -34,7 +35,7 @@ class Lobby : public QDialog {
     Q_OBJECT
 
 public:
-    explicit Lobby(QWidget* parent, QStandardItemModel* list,
+    explicit Lobby(QWidget* parent, GameListModel* list,
                    std::shared_ptr<Core::AnnounceMultiplayerSession> session,
                    Core::System& system_);
     ~Lobby() override;
@@ -43,7 +44,7 @@ public:
      * Updates the lobby with a new game list model.
      * This model should be the original model of the game list.
      */
-    void UpdateGameList(QStandardItemModel* list);
+    void UpdateGameList(GameListModel* list);
     void RetranslateUi();
 
 public slots:

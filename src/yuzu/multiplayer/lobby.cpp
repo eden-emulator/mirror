@@ -14,20 +14,17 @@
 #include "core/internal_network/network_interface.h"
 #include "network/network.h"
 #include "qt_common/config/uisettings.h"
+#include "qt_common/game_list/model.h"
 #include "ui_lobby.h"
 #include "qt_common/game_list/game_list_p.h"
 #include "yuzu/main_window.h"
-#include "yuzu/multiplayer/client_room.h"
 #include "yuzu/multiplayer/lobby.h"
 #include "yuzu/multiplayer/lobby_p.h"
 #include "yuzu/multiplayer/message.h"
 #include "yuzu/multiplayer/state.h"
 #include "yuzu/multiplayer/validation.h"
-#ifdef ENABLE_WEB_SERVICE
-#include "web_service/web_backend.h"
-#endif
 
-Lobby::Lobby(QWidget* parent, QStandardItemModel* list,
+Lobby::Lobby(QWidget* parent, GameListModel* list,
              std::shared_ptr<Core::AnnounceMultiplayerSession> session, Core::System& system_)
     : QDialog(parent, Qt::WindowTitleHint | Qt::WindowCloseButtonHint | Qt::WindowSystemMenuHint),
       ui(std::make_unique<Ui::Lobby>()), announce_multiplayer_session(session), system{system_} {
@@ -99,16 +96,23 @@ Lobby::Lobby(QWidget* parent, QStandardItemModel* list,
 
 Lobby::~Lobby() = default;
 
-void Lobby::UpdateGameList(QStandardItemModel* list) {
+void Lobby::UpdateGameList(GameListModel* list) {
     game_list->clear();
     for (int i = 0; i < list->rowCount(); i++) {
+        // TODO: make this a common method
         auto parent = list->item(i, 0);
-        for (int j = 0; j < parent->rowCount(); j++) {
-            game_list->appendRow(parent->child(j)->clone());
+        if (list->IsFlat()) {
+            game_list->appendRow(parent->clone());
+        } else {
+            for (int j = 0; j < parent->rowCount(); j++) {
+                game_list->appendRow(parent->child(j)->clone());
+            }
         }
     }
+
     if (proxy)
         proxy->UpdateGameList(game_list);
+
     ui->room_list->sortByColumn(Column::GAME_NAME, Qt::AscendingOrder);
 }
 

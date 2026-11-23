@@ -82,7 +82,7 @@ public:
     void SaveInterfaceLayout();
     void LoadInterfaceLayout();
 
-    QStandardItemModel* GetModel() const;
+    GameListModel* GetModel() const;
 
     /// Disables events from the emulated controller
     void UnloadController();

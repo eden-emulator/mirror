@@ -128,7 +128,6 @@ GameList::GameList(FileSys::VirtualFilesystem vfs_, FileSys::ManualContentProvid
     connect(item_model, &GameListModel::SaveConfig, this, &GameList::SaveConfig);
     connect(item_model, &GameListModel::PopulatingStarted, this, &GameList::OnPopulate);
 
-    // TODO: impl on grid/carousel
     connect(tree_view, &GameTree::FilterResultReady, search_field,
             [this](int visible, int total) { search_field->setFilterResult(visible, total); });
 
@@ -201,7 +200,7 @@ void GameList::LoadInterfaceLayout() {
     tree_view->LoadInterfaceLayout();
 }
 
-QStandardItemModel* GameList::GetModel() const {
+GameListModel* GameList::GetModel() const {
     return item_model;
 }
 

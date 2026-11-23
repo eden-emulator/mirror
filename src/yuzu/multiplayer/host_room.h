@@ -10,7 +10,6 @@
 #include <QSortFilterProxyModel>
 #include <QStandardItemModel>
 #include <QVariant>
-#include "network/network.h"
 #include "yuzu/multiplayer/chat_room.h"
 #include "yuzu/multiplayer/validation.h"
 
@@ -23,6 +22,7 @@ class System;
 class AnnounceMultiplayerSession;
 } // namespace Core
 
+class GameListModel;
 class ConnectionError;
 class ComboBoxProxyModel;
 
@@ -32,7 +32,7 @@ class HostRoomWindow : public QDialog {
     Q_OBJECT
 
 public:
-    explicit HostRoomWindow(QWidget* parent, QStandardItemModel* list,
+    explicit HostRoomWindow(QWidget* parent, GameListModel* list,
                             std::shared_ptr<Core::AnnounceMultiplayerSession> session,
                             Core::System& system_);
     ~HostRoomWindow();
@@ -41,7 +41,7 @@ public:
      * Updates the dialog with a new game list model.
      * This model should be the original model of the game list.
      */
-    void UpdateGameList(QStandardItemModel* list);
+    void UpdateGameList(GameListModel* list);
     void RetranslateUi();
 
 signals:

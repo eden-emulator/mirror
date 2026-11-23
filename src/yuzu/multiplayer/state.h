@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: Copyright 2018 Citra Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
@@ -7,9 +7,10 @@
 
 #include <QWidget>
 #include "network/announce_multiplayer_session.h"
-#include "network/network.h"
+#include "network/room_member.h"
 
 class QStandardItemModel;
+class GameListModel;
 class Lobby;
 class HostRoomWindow;
 class ClientRoomWindow;
@@ -31,7 +32,7 @@ public:
         Notification,
     };
 
-    explicit MultiplayerState(QWidget* parent, QStandardItemModel* game_list, QAction* leave_room,
+    explicit MultiplayerState(QWidget* parent, GameListModel* game_list, QAction* leave_room,
                               QAction* show_room, Core::System& system_);
     ~MultiplayerState();
 
@@ -66,7 +67,7 @@ public:
      * Updates the multiplayer dialogs with a new game list model.
      * This model should be the original model of the game list.
      */
-    void UpdateGameList(QStandardItemModel* game_list);
+    void UpdateGameList(GameListModel* game_list);
 
 public slots:
     void OnNetworkStateChanged(const Network::RoomMember::State& state);
@@ -95,7 +96,7 @@ private:
     DirectConnectWindow* direct_connect = nullptr;
     ClickableLabel* status_icon = nullptr;
     ClickableLabel* status_text = nullptr;
-    QStandardItemModel* game_list_model = nullptr;
+    GameListModel* game_list_model = nullptr;
     QAction* leave_room;
     QAction* show_room;
     std::shared_ptr<Core::AnnounceMultiplayerSession> announce_multiplayer_session;

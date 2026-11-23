@@ -4,7 +4,6 @@
 // SPDX-FileCopyrightText: Copyright 2017 Citra Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <future>
 #include <QColor>
 #include <QImage>
 #include <QList>
@@ -19,6 +18,7 @@
 #include "core/internal_network/network_interface.h"
 #include "network/announce_multiplayer_session.h"
 #include "qt_common/config/uisettings.h"
+#include "qt_common/game_list/model.h"
 #include "ui_host_room.h"
 #include "qt_common/game_list/game_list_p.h"
 #include "yuzu/main_window.h"
@@ -27,7 +27,7 @@
 #include "yuzu/multiplayer/state.h"
 #include "yuzu/multiplayer/validation.h"
 
-HostRoomWindow::HostRoomWindow(QWidget* parent, QStandardItemModel* list,
+HostRoomWindow::HostRoomWindow(QWidget* parent, GameListModel* list,
                                std::shared_ptr<Core::AnnounceMultiplayerSession> session,
                                Core::System& system_)
     : QDialog(parent, Qt::WindowTitleHint | Qt::WindowCloseButtonHint | Qt::WindowSystemMenuHint),
@@ -78,12 +78,17 @@ HostRoomWindow::HostRoomWindow(QWidget* parent, QStandardItemModel* list,
 
 HostRoomWindow::~HostRoomWindow() = default;
 
-void HostRoomWindow::UpdateGameList(QStandardItemModel* list) {
+void HostRoomWindow::UpdateGameList(GameListModel* list) {
     game_list->clear();
     for (int i = 0; i < list->rowCount(); i++) {
+        // TODO: make this a common method
         auto parent = list->item(i, 0);
-        for (int j = 0; j < parent->rowCount(); j++) {
-            game_list->appendRow(parent->child(j)->clone());
+        if (list->IsFlat()) {
+            game_list->appendRow(parent->clone());
+        } else {
+            for (int j = 0; j < parent->rowCount(); j++) {
+                game_list->appendRow(parent->child(j)->clone());
+            }
         }
     }
 }

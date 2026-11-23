@@ -205,3 +205,7 @@ QFileSystemWatcher* GameListModel::GetWatcher() const {
 void GameListModel::SetFlat(bool flat) {
     m_flat = flat;
 }
+
+bool GameListModel::IsFlat() const {
+    return m_flat;
+}

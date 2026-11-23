@@ -65,6 +65,7 @@ public:
     QFileSystemWatcher* GetWatcher() const;
 
     void SetFlat(bool flat);
+    bool IsFlat() const;
 
 signals:
     void ShowList(bool show);
