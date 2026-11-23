@@ -7,6 +7,7 @@
 #pragma once
 
 #include <array>
+#include <map>
 
 #include <sirit/sirit.h>
 #include "common/container/unordered_set.h"
@@ -116,6 +117,8 @@ struct UniformDefinitions {
 struct StorageTypeDefinition {
     Id array{};
     Id element{};
+    Id physical_array{};
+    Id physical_element{};
 };
 
 struct StorageTypeDefinitions {
@@ -172,6 +175,13 @@ public:
 
     [[nodiscard]] Id BitOffset8(const IR::Value& offset);
     [[nodiscard]] Id BitOffset16(const IR::Value& offset);
+
+    Id DefineStorageAccess(IR::Opcode opcode, u32 binding);
+    Id StorageBufferBase(u32 binding, const StorageTypeDefinition& type,
+                         Id StorageDefinitions::*member);
+    Id StorageLoad(Id type, Id pointer, u32 alignment);
+    void StorageStore(Id pointer, Id value, u32 alignment);
+    Id StorageCasFunction(Id function) const;
 
     Id Const(u32 value) {
         return Constant(U32[1], value);
@@ -257,6 +267,12 @@ public:
 
     std::array<UniformDefinitions, Info::MAX_CBUFS> cbufs{};
     std::array<StorageDefinitions, Info::MAX_SSBOS> ssbos{};
+    std::map<std::pair<IR::Opcode, u32>, Id> storage_access_functions;
+    std::map<u32, Id> physical_storage_cas_functions;
+    u32 storage_buffer_index_base{};
+    u32 storage_buffer_table_member_index{};
+    Id large_storage_buffer_address{};
+    bool emitting_large_storage{};
     std::vector<TextureBufferDefinition> texture_buffers;
     std::vector<ImageBufferDefinition> image_buffers;
     std::vector<TextureDefinition> textures;
@@ -396,9 +412,8 @@ private:
     void DefineWriteStorageCasLoopFunction(const Info& info);
     void DefineGlobalMemoryFunctions(const Info& info);
     void DefineRescalingInput(const Info& info);
-    void DefineRescalingInputPushConstant();
+    void DefineRescalingInputPushConstant(const Info& info);
     void DefineRescalingInputUniformConstant();
-    void DefineRenderArea(const Info& info);
 
     void DefineInputs(const IR::Program& program);
     void DefineOutputs(const IR::Program& program);

@@ -29,9 +29,16 @@ struct RescalingLayout {
 struct RenderAreaLayout {
     std::array<f32, 4> render_area;
 };
+struct StorageBufferAddress {
+    // A zero address selects the native storage descriptor.
+    u64 address;
+    u64 size;
+};
+static_assert(sizeof(StorageBufferAddress) == sizeof(u64[2]));
 constexpr u32 RESCALING_LAYOUT_WORDS_OFFSET = offsetof(RescalingLayout, rescaling_textures);
 constexpr u32 RESCALING_LAYOUT_DOWN_FACTOR_OFFSET = offsetof(RescalingLayout, down_factor);
-constexpr u32 RENDERAREA_LAYOUT_OFFSET = offsetof(RenderAreaLayout, render_area);
+constexpr u32 RENDERAREA_LAYOUT_OFFSET = sizeof(RescalingLayout);
+constexpr u32 STORAGE_BUFFER_TABLE_OFFSET = RENDERAREA_LAYOUT_OFFSET + sizeof(RenderAreaLayout);
 
 [[nodiscard]] std::vector<u32> EmitSPIRV(const Profile& profile, const RuntimeInfo& runtime_info, IR::Program& program, Bindings& bindings);
 [[nodiscard]] inline std::vector<u32> EmitSPIRV(const Profile& profile, IR::Program& program) {

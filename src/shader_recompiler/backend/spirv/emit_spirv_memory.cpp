@@ -36,9 +36,11 @@ Id StoragePointer(EmitContext& ctx, const IR::Value& binding, const IR::Value& o
     if (!binding.IsImmediate()) {
         throw NotImplementedException("Dynamic storage buffer indexing");
     }
-    const Id ssbo{ctx.ssbos[binding.U32()].*member_ptr};
+    const Id ssbo{ctx.StorageBufferBase(binding.U32(), type_def, member_ptr)};
     const Id index{StorageIndex(ctx, offset, element_size, index_offset)};
-    return ctx.OpAccessChain(type_def.element, ssbo, ctx.u32_zero_value, index);
+    return ctx.OpAccessChain(ctx.emitting_large_storage ? type_def.physical_element
+                                                        : type_def.element,
+                             ssbo, ctx.u32_zero_value, index);
 }
 
 Id LoadStorage(EmitContext& ctx, const IR::Value& binding, const IR::Value& offset, Id result_type,
@@ -46,7 +48,7 @@ Id LoadStorage(EmitContext& ctx, const IR::Value& binding, const IR::Value& offs
                Id StorageDefinitions::*member_ptr, u32 index_offset = 0) {
     const Id pointer{
         StoragePointer(ctx, binding, offset, type_def, element_size, member_ptr, index_offset)};
-    return ctx.OpLoad(result_type, pointer);
+    return ctx.StorageLoad(result_type, pointer, static_cast<u32>(element_size));
 }
 
 Id LoadStorage32(EmitContext& ctx, const IR::Value& binding, const IR::Value& offset,
@@ -60,7 +62,7 @@ void WriteStorage(EmitContext& ctx, const IR::Value& binding, const IR::Value& o
                   Id StorageDefinitions::*member_ptr, u32 index_offset = 0) {
     const Id pointer{
         StoragePointer(ctx, binding, offset, type_def, element_size, member_ptr, index_offset)};
-    ctx.OpStore(pointer, value);
+    ctx.StorageStore(pointer, value, static_cast<u32>(element_size));
 }
 
 void WriteStorage32(EmitContext& ctx, const IR::Value& binding, const IR::Value& offset, Id value,
@@ -73,8 +75,8 @@ void WriteStorageByCasLoop(EmitContext& ctx, const IR::Value& binding, const IR:
                            Id value, Id bit_offset, Id bit_count) {
     const Id pointer{StoragePointer(ctx, binding, offset, ctx.storage_types.U32, sizeof(u32),
                                     &StorageDefinitions::U32)};
-    ctx.OpFunctionCall(ctx.TypeVoid(), ctx.write_storage_cas_loop_func, pointer, value, bit_offset,
-                       bit_count);
+    ctx.OpFunctionCall(ctx.TypeVoid(), ctx.StorageCasFunction(ctx.write_storage_cas_loop_func),
+                       pointer, value, bit_offset, bit_count);
 }
 } // Anonymous namespace
 

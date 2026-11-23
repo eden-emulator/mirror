@@ -10,6 +10,7 @@
 
 #include <boost/container/small_vector.hpp>
 
+#include "shader_recompiler/backend/spirv/emit_spirv.h"
 #include "video_core/buffer_cache/buffer_cache_base.h"
 #include "video_core/buffer_cache/memory_tracker_base.h"
 #include "video_core/buffer_cache/usage_tracker.h"
@@ -214,8 +215,15 @@ public:
 
     void BindStorageBuffer(const Buffer& buffer, u32 offset, u32 size,
                            [[maybe_unused]] bool is_written) {
-        BindBuffer(buffer, offset, size);
+        BindStorageBuffer(buffer.Handle(), buffer.DeviceAddress(), offset, size);
     }
+
+    void BeginStorageBufferBindings() {
+        storage_buffer_addresses.clear();
+        has_large_storage_buffer = false;
+    }
+
+    VkDeviceAddress UploadStorageBufferAddresses();
 
     void BindTextureBuffer(Buffer& buffer, u32 offset, u32 size,
                            VideoCore::Surface::PixelFormat format) {
@@ -237,6 +245,9 @@ public:
     }
 
 private:
+  void BindStorageBuffer(VkBuffer buffer, VkDeviceAddress address, VkDeviceSize offset,
+                         VkDeviceSize size);
+
     void BindBuffer(const Buffer& buffer, u32 offset, u32 size) {
         const VkBuffer handle = buffer.Handle();
         if (handle == VK_NULL_HANDLE) {
@@ -268,6 +279,8 @@ private:
     MultiRangeBufferCache multi_range_buffers;
     boost::container::small_vector<MultiRangeSource, 16> multi_range_sources;
     VkDeviceSize multi_range_total{};
+    std::vector<Shader::Backend::SPIRV::StorageBufferAddress> storage_buffer_addresses;
+    bool has_large_storage_buffer{};
 
     bool limit_dynamic_storage_buffers = false;
     u32 max_dynamic_storage_buffers = (std::numeric_limits<u32>::max)();

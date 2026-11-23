@@ -8,6 +8,7 @@
 #include <array>
 #include <cstring>
 #include <span>
+#include <stdexcept>
 #include <vector>
 
 #include "video_core/buffer_cache/buffer_cache_base.h"
@@ -545,6 +546,31 @@ void BufferCacheRuntime::ClearBuffer(VkBuffer dest_buffer, u32 offset, size_t si
     });
 }
 
+void BufferCacheRuntime::BindStorageBuffer(VkBuffer buffer, VkDeviceAddress address,
+                                           VkDeviceSize offset, VkDeviceSize size) {
+    const bool oversized{buffer != VK_NULL_HANDLE && size > device.GetMaxStorageBufferRange()};
+    if (oversized && (!device.IsBufferDeviceAddressSupported() ||
+                      !device.IsShaderInt64Supported() || address == 0)) {
+        throw std::runtime_error(
+            "Oversized storage buffer requires buffer device address and Int64");
+    }
+    storage_buffer_addresses.push_back({oversized ? address + offset : 0, oversized ? size : 0});
+    has_large_storage_buffer |= oversized;
+    guest_descriptor_queue.AddBuffer(buffer, address, buffer ? offset : 0,
+                                     buffer ? (std::min)(size, device.GetMaxStorageBufferRange())
+                                            : VK_WHOLE_SIZE);
+}
+
+VkDeviceAddress BufferCacheRuntime::UploadStorageBufferAddresses() {
+    if (!has_large_storage_buffer) {
+        return 0;
+    }
+    const size_t size{storage_buffer_addresses.size() * sizeof(storage_buffer_addresses[0])};
+    const auto ref{staging_pool.Request(size, MemoryUsage::Upload)};
+    std::memcpy(ref.mapped_span.data(), storage_buffer_addresses.data(), size);
+    return ref.device_address + ref.offset;
+}
+
 bool BufferCacheRuntime::BindMultiRangeStorageBuffer(u64 key, bool is_written) {
     if (multi_range_sources.empty() || multi_range_total == 0) {
         return false;
@@ -572,7 +598,7 @@ bool BufferCacheRuntime::BindMultiRangeStorageBuffer(u64 key, bool is_written) {
         PostCopyBarrier();
         multi_range_buffers.MarkGathered(key);
     }
-    guest_descriptor_queue.AddBuffer(ref.handle, ref.address, 0, ref.size);
+    BindStorageBuffer(ref.handle, ref.address, 0, ref.size);
     return true;
 }
 

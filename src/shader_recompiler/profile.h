@@ -23,6 +23,7 @@ struct Profile {
     bool support_uniform_and_storage_buffer_16bit{};
     bool support_storage_buffer_16bit{};
     bool support_int64{};
+    bool support_large_storage_buffers{};
     bool support_vertex_instance_id{};
     bool support_float_controls{};
     bool support_separate_denorm_behavior{};

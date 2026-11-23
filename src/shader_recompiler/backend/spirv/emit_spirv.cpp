@@ -112,10 +112,24 @@ void EmitInst(EmitContext& ctx, IR::Inst* inst) {
 
 Id TypeId(const EmitContext& ctx, IR::Type type) {
     switch (type) {
+    case IR::Type::Void:
+        return ctx.void_id;
     case IR::Type::U1:
         return ctx.U1;
     case IR::Type::U32:
         return ctx.U32[1];
+    case IR::Type::U64:
+        return ctx.U64;
+    case IR::Type::U32x2:
+        return ctx.U32[2];
+    case IR::Type::U32x4:
+        return ctx.U32[4];
+    case IR::Type::F16x2:
+        return ctx.F16[2];
+    case IR::Type::F32:
+        return ctx.F32[1];
+    case IR::Type::F32x2:
+        return ctx.F32[2];
     default:
         throw NotImplementedException("Phi node type {}", type);
     }
@@ -133,7 +147,26 @@ void Traverse(EmitContext& ctx, IR::Program& program) {
             current_block = node.data.block;
             ctx.AddLabel(label);
             for (IR::Inst& inst : node.data.block->Instructions()) {
-                EmitInst(ctx, &inst);
+                const auto opcode{inst.GetOpcode()};
+                if (ctx.profile.support_large_storage_buffers &&
+                    ((opcode >= IR::Opcode::LoadStorageU8 &&
+                      opcode <= IR::Opcode::WriteStorage128) ||
+                     (opcode >= IR::Opcode::StorageAtomicIAdd32 &&
+                      opcode <= IR::Opcode::StorageAtomicMaxF32x2))) {
+                    const Id function{ctx.storage_access_functions.at({opcode, inst.Arg(0).U32()})};
+                    std::array<Id, 2> arguments{};
+                    for (size_t i = 1; i < inst.NumArgs(); ++i) {
+                        arguments[i - 1] = ctx.Def(inst.Arg(i));
+                    }
+                    const Id result{
+                        ctx.OpFunctionCall(TypeId(ctx, inst.Type()), function,
+                                           std::span(arguments.data(), inst.NumArgs() - 1))};
+                    if (inst.Type() != IR::Type::Void) {
+                        inst.SetDefinition(result);
+                    }
+                } else {
+                    EmitInst(ctx, &inst);
+                }
             }
             break;
         }
@@ -549,6 +582,131 @@ void RewriteOpcodes(std::vector<u32>& code, std::span<const std::pair<u32, spv::
     }
 }
 } // Anonymous namespace
+
+Id EmitContext::DefineStorageAccess(IR::Opcode opcode, u32 binding) {
+    // Outline the bounds checks to preserve the guest block labels used by OpPhi.
+    const auto key{std::make_pair(opcode, binding)};
+    if (const auto it{storage_access_functions.find(key)}; it != storage_access_functions.end()) {
+        return it->second;
+    }
+    const Id result_type{TypeId(*this, IR::TypeOf(opcode))};
+    const bool has_value{IR::NumArgsOf(opcode) == 3};
+    const Id value_type{has_value ? TypeId(*this, IR::ArgTypeOf(opcode, 2)) : void_id};
+    const Id function_type{has_value ? TypeFunction(result_type, U32[1], value_type)
+                                     : TypeFunction(result_type, U32[1])};
+    const Id function{OpFunction(result_type, spv::FunctionControlMask::Inline, function_type)};
+    const Id offset{OpFunctionParameter(U32[1])};
+    const Id value{has_value ? OpFunctionParameter(value_type) : Id{}};
+    IR::Inst offset_arg{IR::Opcode::Void, 0};
+    IR::Inst value_arg{IR::Opcode::Void, 0};
+    offset_arg.SetDefinition(offset);
+    value_arg.SetDefinition(value);
+    IR::Inst access{opcode, 0};
+    access.SetArg(0, IR::Value{binding});
+    access.SetArg(1, IR::Value{&offset_arg});
+    if (has_value) {
+        access.SetArg(2, IR::Value{&value_arg});
+    }
+
+    u32 width{sizeof(u32)};
+    switch (opcode) {
+    case IR::Opcode::LoadStorageU8:
+    case IR::Opcode::LoadStorageS8:
+    case IR::Opcode::WriteStorageU8:
+    case IR::Opcode::WriteStorageS8:
+        if (profile.support_int8 && profile.support_storage_buffer_8bit &&
+            profile.support_descriptor_aliasing) {
+            width = sizeof(u8);
+        }
+        break;
+    case IR::Opcode::LoadStorageU16:
+    case IR::Opcode::LoadStorageS16:
+    case IR::Opcode::WriteStorageU16:
+    case IR::Opcode::WriteStorageS16:
+        if (profile.support_int16 && profile.support_storage_buffer_16bit &&
+            profile.support_descriptor_aliasing) {
+            width = sizeof(u16);
+        }
+        break;
+    case IR::Opcode::LoadStorage64:
+    case IR::Opcode::WriteStorage64:
+        width = sizeof(u32[2]);
+        break;
+    case IR::Opcode::LoadStorage128:
+    case IR::Opcode::WriteStorage128:
+        width = sizeof(u32[4]);
+        break;
+    default:
+        if (IR::TypeOf(opcode) == IR::Type::U64 || IR::TypeOf(opcode) == IR::Type::U32x2) {
+            width = sizeof(u64);
+        }
+        break;
+    }
+    const u32 alignment{profile.support_descriptor_aliasing ? width
+                                                            : std::min(width, u32{sizeof(u32)})};
+    const Id native{OpLabel()};
+    const Id lookup{OpLabel()};
+    const Id end_lookup{OpLabel()};
+    const Id bounds{OpLabel()};
+    const Id physical{OpLabel()};
+    const Id out_of_bounds{OpLabel()};
+    AddLabel();
+    const Id table_pointer{OpAccessChain(TypePointer(spv::StorageClass::PushConstant, U64),
+                                         rescaling_push_constants,
+                                         Const(storage_buffer_table_member_index))};
+    const Id table{OpLoad(U64, table_pointer)};
+    const Id has_table{OpINotEqual(U1, table, Constant(U64, u64{0}))};
+    OpSelectionMerge(native, spv::SelectionControlMask::MaskNone);
+    OpBranchConditional(has_table, lookup, native);
+    AddLabel(lookup);
+    const Id entry_address{OpIAdd(
+        U64, table,
+        Constant(U64, u64{storage_buffer_index_base + binding} * sizeof(StorageBufferAddress)))};
+    const Id entry_type{TypeVector(U64, 2)};
+    const Id entry_pointer{OpConvertUToPtr(
+        TypePointer(spv::StorageClass::PhysicalStorageBuffer, entry_type), entry_address)};
+    const Id entry{OpLoad(entry_type, entry_pointer, spv::MemoryAccessMask::Aligned,
+                          u32{sizeof(StorageBufferAddress)})};
+    large_storage_buffer_address = OpCompositeExtract(U64, entry, 0U);
+    const Id size{OpCompositeExtract(U64, entry, 1U)};
+    const Id has_address{
+        OpINotEqual(U1, large_storage_buffer_address, Constant(U64, u64{0}))};
+    OpSelectionMerge(end_lookup, spv::SelectionControlMask::MaskNone);
+    OpBranchConditional(has_address, bounds, end_lookup);
+    AddLabel(bounds);
+    const Id aligned_offset{OpUConvert(U64, OpBitwiseAnd(U32[1], offset, Const(~(alignment - 1))))};
+    const Id end{OpIAdd(U64, aligned_offset, Constant(U64, u64{width}))};
+    const Id in_bounds{OpULessThanEqual(U1, end, size)};
+    OpSelectionMerge(out_of_bounds, spv::SelectionControlMask::MaskNone);
+    OpBranchConditional(in_bounds, physical, out_of_bounds);
+    AddLabel(physical);
+    emitting_large_storage = true;
+    EmitInst(*this, &access);
+    emitting_large_storage = false;
+    if (IR::TypeOf(opcode) == IR::Type::Void) {
+        OpReturn();
+    } else {
+        OpReturnValue(access.Definition<Id>());
+    }
+    AddLabel(out_of_bounds);
+    if (IR::TypeOf(opcode) == IR::Type::Void) {
+        OpReturn();
+    } else {
+        OpReturnValue(ConstantNull(result_type));
+    }
+    AddLabel(end_lookup);
+    OpBranch(native);
+    AddLabel(native);
+    EmitInst(*this, &access);
+    if (IR::TypeOf(opcode) == IR::Type::Void) {
+        OpReturn();
+    } else {
+        OpReturnValue(access.Definition<Id>());
+    }
+    OpFunctionEnd();
+    storage_access_functions.emplace(key, function);
+    return function;
+}
 
 std::vector<u32> EmitSPIRV(const Profile& profile, const RuntimeInfo& runtime_info, IR::Program& program, Bindings& bindings) {
     EmitContext ctx{profile, runtime_info, program, bindings};
