@@ -1,0 +1,55 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+#version 460
+
+layout(local_size_x = 64) in;
+layout(std430, binding = 0) readonly buffer Count { uint counts[]; };
+layout(std430, binding = 1) readonly buffer Records { uint records[]; };
+layout(std430, binding = 2) writeonly buffer Output { uint output_data[]; };
+layout(push_constant) uniform Parameters {
+    uint first;
+    uint end;
+    uint stride;
+    uint count_offset;
+    uint record_offset;
+    uint indexed;
+};
+
+void main() {
+    uint id = gl_GlobalInvocationID.x;
+    if (id >= end) {
+        return;
+    }
+    uint count = counts[count_offset];
+    // MME compares the sign of a wrapping subtraction, including at the signed boundary.
+    uint limit = int(end - count) < 0 ? end : count;
+    uint current = int(first - limit) < 0 ? limit - first : 0;
+    // Empty prefix commands preserve the macro's absolute draw ID for each window.
+    bool enabled = id >= first && id - first < current;
+    uint words = 4 + indexed;
+    for (uint word = 0; word < words; ++word) {
+        output_data[8 + id * words + word] = enabled ? records[record_offset + (id - first) * stride + word] : 0;
+    }
+    if (id != 0) {
+        return;
+    }
+    output_data[0] = current != 0 ? first + current : 0;
+    if (indexed != 0) return;
+    output_data[1] = current;
+    output_data[2] = current != 0 ? records[record_offset + (current - 1) * stride + 2] : 0;
+    for (uint word = 3; word < 8; ++word) {
+        output_data[word] = 0;
+    }
+    // Retain only the state left by the last record that executes a begin/end pair.
+    for (uint draw = current; draw != 0; --draw) {
+        uint base = record_offset + (draw - 1) * stride;
+        if (records[base + 1] != 0) {
+            output_data[3] = records[base + 2];
+            output_data[4] = records[base];
+            output_data[5] = records[base + 1];
+            output_data[6] = records[base + 3];
+            break;
+        }
+    }
+}

@@ -106,6 +106,19 @@ private:
     ComputePassDescriptorQueue& compute_pass_descriptor_queue;
 };
 
+class DrawIndirectCountPass final : public ComputePass {
+public:
+    explicit DrawIndirectCountPass(const Device& device_, Scheduler& scheduler_,
+                                   DescriptorPool& descriptor_pool_,
+                                   ComputePassDescriptorQueue& descriptor_queue_);
+    void Run(VkBuffer count, u32 count_offset, VkBuffer records, u32 record_offset,
+             VkBuffer output, u32 first, u32 end, u32 stride, bool indexed);
+
+private:
+    Scheduler& scheduler;
+    ComputePassDescriptorQueue& descriptor_queue;
+};
+
 class QueriesPrefixScanPass final : public ComputePass {
 public:
     explicit QueriesPrefixScanPass(const Device& device_, Scheduler& scheduler_,

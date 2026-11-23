@@ -64,6 +64,7 @@ set(SHADER_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/queries_prefix_scan_sum.comp
     ${CMAKE_CURRENT_SOURCE_DIR}/queries_prefix_scan_sum_nosubgroups.comp
     ${CMAKE_CURRENT_SOURCE_DIR}/resolve_conditional_render.comp
+    ${CMAKE_CURRENT_SOURCE_DIR}/resolve_draw_indirect_count.comp
     ${CMAKE_CURRENT_SOURCE_DIR}/smaa_edge_detection.vert
     ${CMAKE_CURRENT_SOURCE_DIR}/smaa_edge_detection.frag
     ${CMAKE_CURRENT_SOURCE_DIR}/smaa_blending_weight_calculation.vert

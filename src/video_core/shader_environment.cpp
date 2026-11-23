@@ -334,7 +334,7 @@ GraphicsEnvironment::GraphicsEnvironment(Tegra::Engines::Maxwell3D& maxwell3d_,
     texture_bound = maxwell3d->regs.bindless_texture_const_buffer_slot;
     is_proprietary_driver = texture_bound == 2;
     has_hle_engine_state =
-        maxwell3d->engine_state == Tegra::Engines::Maxwell3D::EngineHint::OnHLEMacro;
+        maxwell3d->engine_state != Tegra::Engines::Maxwell3D::EngineHint::None;
 }
 
 u32 GraphicsEnvironment::ReadCbufValue(u32 cbuf_index, u32 cbuf_offset) {
@@ -351,6 +351,10 @@ u32 GraphicsEnvironment::ReadCbufValue(u32 cbuf_index, u32 cbuf_offset) {
 std::optional<Shader::ReplaceConstant> GraphicsEnvironment::GetReplaceConstBuffer(u32 bank,
                                                                                   u32 offset) {
     if (!has_hle_engine_state) {
+        return std::nullopt;
+    }
+    if (maxwell3d->engine_state == Tegra::Engines::Maxwell3D::EngineHint::OnHLEMultiDrawArrays &&
+        stage_index != 0) {
         return std::nullopt;
     }
     const u64 key = (static_cast<u64>(bank) << 32) | static_cast<u64>(offset);

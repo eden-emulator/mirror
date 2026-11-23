@@ -29,6 +29,7 @@
 #include "video_core/renderer_vulkan/maxwell_to_vk.h"
 #include "video_core/renderer_vulkan/vk_buffer_cache.h"
 #include "video_core/renderer_vulkan/vk_compute_pipeline.h"
+#include "video_core/renderer_vulkan/vk_compute_pass.h"
 #include "video_core/renderer_vulkan/vk_descriptor_pool.h"
 #include "video_core/renderer_vulkan/vk_pipeline_cache.h"
 #include "video_core/renderer_vulkan/vk_query_cache.h"
@@ -447,6 +448,171 @@ void RasterizerVulkan::DrawIndirect() {
         }
     });
     buffer_cache.SetDrawIndirect(nullptr);
+}
+
+bool RasterizerVulkan::DrawArraysIndirectCount(GPUVAddr count, GPUVAddr records, u32 first, u32 end, u32 stride, u32 topology) {
+    return DrawMultiIndirectCount(count, records, first, end, stride, topology, false);
+}
+
+bool RasterizerVulkan::DrawIndexedIndirectCount(GPUVAddr count, GPUVAddr records, u32 first, u32 end, u32 stride, u32 topology) {
+    return DrawMultiIndirectCount(count, records, first, end, stride, topology, true);
+}
+
+bool RasterizerVulkan::DrawMultiIndirectCount(GPUVAddr count, GPUVAddr records, u32 first, u32 end, u32 stride, u32 topology, bool indexed) {
+    PruneIndirectSnapshots();
+    constexpr u32 MAX_COMMANDS = 65536;
+    const u32 command_size = indexed ? sizeof(VkDrawIndexedIndirectCommand)
+                                     : sizeof(VkDrawIndirectCommand);
+    if (first >= end || end > (std::min)(MAX_COMMANDS, device.GetMaxDrawIndirectCount()) ||
+        stride < command_size || (count | records | stride) % sizeof(u32) != 0) {
+        return false;
+    }
+    const u64 size = u64{end - first - 1} * stride + command_size;
+    if (size + device.GetStorageBufferAlignment() > device.GetMaxStorageBufferRange()) {
+        return false;
+    }
+    const auto count_cpu = gpu_memory->GpuToCpuAddress(count, sizeof(u32));
+    const auto records_cpu = gpu_memory->GpuToCpuAddress(records, size);
+    if (!count_cpu || !records_cpu || !gpu_memory->IsContinuousRange(records, size)) {
+        return false;
+    }
+    auto& manager = maxwell3d->draw_manager;
+    const auto old_topology = manager.draw_state.topology;
+    const auto old_index_buffer = manager.draw_state.index_buffer;
+    const auto old_params = manager.indirect_state;
+    const auto restore = [&] {
+        buffer_cache.SetDrawIndirect(nullptr);
+        manager.indirect_state = old_params;
+        manager.draw_state.topology = old_topology;
+        if (indexed) {
+            manager.draw_state.index_buffer = old_index_buffer;
+            maxwell3d->dirty.flags[VideoCommon::Dirty::IndexBuffer] = true;
+        }
+    };
+    auto restore_state = SCOPE_GUARD {
+        restore();
+    };
+    if (indexed) {
+        manager.draw_state.index_buffer = maxwell3d->regs.index_buffer;
+        manager.draw_state.index_buffer.first = 0;
+        manager.draw_state.index_buffer.count = static_cast<u32>(maxwell3d->EstimateIndexBufferSize());
+        maxwell3d->dirty.flags[VideoCommon::Dirty::IndexBuffer] = true;
+    }
+    manager.draw_state.topology = static_cast<Maxwell::PrimitiveTopology>(topology & 0xFFFF);
+    manager.UpdateTopology(*maxwell3d);
+    const auto effective_topology = manager.draw_state.topology;
+    if (effective_topology == Maxwell::PrimitiveTopology::LineLoop ||
+        effective_topology == Maxwell::PrimitiveTopology::Quads ||
+        effective_topology == Maxwell::PrimitiveTopology::QuadStrip ||
+        effective_topology == Maxwell::PrimitiveTopology::Polygon) {
+        return false;
+    }
+    gpu_memory->FlushCaching();
+    const auto pipeline = pipeline_cache.CurrentGraphicsPipeline();
+    if (!pipeline || !pipeline->SupportsIndirectParameters()) {
+        return false;
+    }
+    VkBuffer count_buffer;
+    VkBuffer records_buffer;
+    u32 count_offset;
+    u32 records_offset;
+    {
+        std::scoped_lock lock{buffer_cache.mutex, texture_cache.mutex};
+        if (texture_cache.IsRegionGpuModified(*count_cpu, sizeof(u32)) ||
+            texture_cache.IsRegionGpuModified(*records_cpu, size) ||
+            query_cache.IsRegionGpuModified(*count_cpu, sizeof(u32)) ||
+            query_cache.IsRegionGpuModified(*records_cpu, size)) {
+            return false;
+        }
+        using VideoCommon::ObtainBufferOperation;
+        using VideoCommon::ObtainBufferSynchronize;
+        const auto obtain = [&](GPUVAddr address, u32 bytes) {
+            return buffer_cache.ObtainBuffer(address, bytes, ObtainBufferSynchronize::FullSynchronize,
+                                             ObtainBufferOperation::DoNothing);
+        };
+        // Both ranges must exist before retaining references: the second can merge the first.
+        obtain(count, sizeof(u32));
+        obtain(records, static_cast<u32>(size));
+        const auto count_binding = obtain(count, sizeof(u32));
+        const auto records_binding = obtain(records, static_cast<u32>(size));
+        count_buffer = count_binding.first->Handle();
+        count_offset = count_binding.second;
+        records_buffer = records_binding.first->Handle();
+        records_offset = records_binding.second;
+        count_binding.first->MarkUsage(count_offset, sizeof(u32));
+        records_binding.first->MarkUsage(records_offset, size);
+    }
+    if (indexed) {
+        maxwell3d->DiscardIndirectGeometryState();
+    }
+    if (!draw_indirect_count_pass) {
+        draw_indirect_count_pass = std::make_unique<DrawIndirectCountPass>(
+            device, scheduler, descriptor_pool, compute_pass_descriptor_queue);
+    }
+    auto snapshot = std::make_shared<IndirectSnapshot>();
+    snapshot->commands = staging_pool.Request(32 + u64{end} * command_size, MemoryUsage::DeviceLocal, true);
+    draw_indirect_count_pass->Run(count_buffer, count_offset, records_buffer, records_offset,
+                                  snapshot->commands.buffer, first, end, stride, indexed);
+    if (!indexed) {
+        snapshot->state = staging_pool.Request(32, MemoryUsage::Download, true);
+        scheduler.Record([src = snapshot->commands.buffer, dst = snapshot->state.buffer,
+                          dst_offset = snapshot->state.offset](vk::CommandBuffer cmdbuf) {
+            const VkBufferCopy copy{.srcOffset = 0, .dstOffset = dst_offset, .size = 32};
+            cmdbuf.CopyBuffer(src, dst, copy);
+            const VkMemoryBarrier barrier{
+                .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER,
+                .srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
+                .dstAccessMask = VK_ACCESS_HOST_READ_BIT,
+            };
+            cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0, barrier);
+        });
+    }
+
+    manager.indirect_state = {
+        .is_byte_count = false,
+        .is_indexed = indexed,
+        .include_count = true,
+        .count_start_address = count,
+        .indirect_start_address = records,
+        .buffer_size = static_cast<u32>(size),
+        .max_draw_counts = end - first,
+        .stride = stride,
+    };
+    buffer_cache.SetDrawIndirect(&manager.indirect_state);
+    if (maxwell3d->ShouldExecute()) {
+        PrepareDraw(indexed, [this, buffer = snapshot->commands.buffer, end, indexed, command_size] {
+            scheduler.Record([buffer, end, indexed, command_size](vk::CommandBuffer cmdbuf) {
+                if (indexed) {
+                    cmdbuf.DrawIndexedIndirectCount(buffer, 32, buffer, 0, end, command_size);
+                } else {
+                    cmdbuf.DrawIndirectCount(buffer, 32, buffer, 0, end, command_size);
+                }
+            });
+        });
+    }
+    if (indexed) {
+        buffer_cache.SetDrawIndirect(nullptr);
+        manager.indirect_state = old_params;
+    } else {
+        restore();
+    }
+    restore_state.Cancel();
+    snapshot->tick = scheduler.CurrentTick();
+    indirect_snapshots.push_back(snapshot);
+    if (indexed) {
+        return true;
+    }
+    maxwell3d->DeferIndirectState(
+        [this, snapshot](bool wait, std::array<u32, 8>& state) {
+            if (wait) {
+                scheduler.Wait(snapshot->tick);
+            } else if (!scheduler.IsFree(snapshot->tick)) {
+                return false;
+            }
+            std::memcpy(state.data(), snapshot->state.mapped_span.data(), sizeof(state));
+            return true;
+        }, topology, effective_topology);
+    return true;
 }
 
 void RasterizerVulkan::DrawTexture() {
@@ -1024,8 +1190,22 @@ void RasterizerVulkan::FlushCommands() {
     scheduler.Flush();
 }
 
+void RasterizerVulkan::PruneIndirectSnapshots() {
+    std::erase_if(indirect_snapshots, [this](const auto& snapshot) {
+        if (snapshot.use_count() != 1 || !scheduler.IsFree(snapshot->tick)) {
+            return false;
+        }
+        staging_pool.FreeDeferred(snapshot->commands);
+        if (snapshot->state.buffer != VK_NULL_HANDLE) {
+            staging_pool.FreeDeferred(snapshot->state);
+        }
+        return true;
+    });
+}
+
 void RasterizerVulkan::TickFrame() {
     draw_counter = 0;
+    PruneIndirectSnapshots();
     guest_descriptor_queue.TickFrame();
     compute_pass_descriptor_queue.TickFrame();
     descriptor_buffer_ring.TickFrame();

@@ -20,6 +20,7 @@
 #include "video_core/host_shaders/queries_prefix_scan_sum_comp_spv.h"
 #include "video_core/host_shaders/queries_prefix_scan_sum_nosubgroups_comp_spv.h"
 #include "video_core/host_shaders/resolve_conditional_render_comp_spv.h"
+#include "video_core/host_shaders/resolve_draw_indirect_count_comp_spv.h"
 #include "video_core/host_shaders/vulkan_block_linear_unswizzle_2d_buffer_comp_spv.h"
 #include "video_core/host_shaders/vulkan_quad_indexed_comp_spv.h"
 #include "video_core/host_shaders/vulkan_uint8_comp_spv.h"
@@ -428,6 +429,55 @@ void ConditionalRenderingResolvePass::Resolve(VkBuffer dst_buffer, VkBuffer src_
         cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
                                VK_PIPELINE_STAGE_CONDITIONAL_RENDERING_BIT_EXT, 0,
                                write_barrier);
+    });
+}
+
+DrawIndirectCountPass::DrawIndirectCountPass(
+    const Device& device_, Scheduler& scheduler_, DescriptorPool& descriptor_pool_,
+    ComputePassDescriptorQueue& descriptor_queue_)
+    : ComputePass(device_, scheduler_, descriptor_pool_, QUERIES_SCAN_DESCRIPTOR_SET_BINDINGS,
+                  QUERIES_SCAN_DESCRIPTOR_UPDATE_TEMPLATE, QUERIES_SCAN_BANK_INFO,
+                  COMPUTE_PUSH_CONSTANT_RANGE<6 * sizeof(u32)>, RESOLVE_DRAW_INDIRECT_COUNT_COMP_SPV),
+      scheduler{scheduler_}, descriptor_queue{descriptor_queue_} {}
+
+void DrawIndirectCountPass::Run(VkBuffer count, u32 count_offset, VkBuffer records, u32 record_offset, VkBuffer output, u32 first, u32 end, u32 stride, bool indexed) {
+    const u32 command_size = indexed ? sizeof(VkDrawIndexedIndirectCommand) : sizeof(VkDrawIndirectCommand);
+    const auto alignment = device.GetStorageBufferAlignment();
+    const auto count_base = count_offset / alignment * alignment;
+    const auto record_base = record_offset / alignment * alignment;
+    descriptor_queue.Acquire(scheduler, 3);
+    descriptor_queue.AddBuffer(count, count_base, count_offset - count_base + sizeof(u32));
+    descriptor_queue.AddBuffer(records, record_base,
+                               record_offset - record_base + u64{end - first - 1} * stride + command_size);
+    descriptor_queue.AddBuffer(output, 0, 32 + u64{end} * command_size);
+    const void* descriptor_data = descriptor_queue.UpdateData();
+    const std::array<u32, 6> constants{first, end, stride / 4,
+                                     static_cast<u32>((count_offset - count_base) / 4),
+                                     static_cast<u32>((record_offset - record_base) / 4),
+                                     indexed ? 1U : 0U};
+    scheduler.RequestOutsideRenderPassOperationContext();
+    scheduler.Record([this, descriptor_data, constants, end](vk::CommandBuffer cmdbuf) {
+        const VkMemoryBarrier before{
+            .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER,
+            .srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_TRANSFER_WRITE_BIT,
+            .dstAccessMask = VK_ACCESS_SHADER_READ_BIT,
+        };
+        const VkMemoryBarrier after{
+            .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER,
+            .srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT,
+            .dstAccessMask = VK_ACCESS_INDIRECT_COMMAND_READ_BIT | VK_ACCESS_TRANSFER_READ_BIT,
+        };
+        const VkDescriptorSet set = descriptor_allocator.Commit();
+        device.GetLogical().UpdateDescriptorSet(set, *descriptor_template, descriptor_data);
+        cmdbuf.PipelineBarrier(vk::PIPELINE_STAGE_GRAPHICS_COMPUTE | VK_PIPELINE_STAGE_TRANSFER_BIT,
+                               VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, before);
+        cmdbuf.BindPipeline(VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
+        cmdbuf.BindDescriptorSets(VK_PIPELINE_BIND_POINT_COMPUTE, *layout, 0, set, {});
+        cmdbuf.PushConstants(*layout, VK_SHADER_STAGE_COMPUTE_BIT, constants);
+        cmdbuf.Dispatch((end + 63) / 64, 1, 1);
+        cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                               VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT | VK_PIPELINE_STAGE_TRANSFER_BIT,
+                               0, after);
     });
 }
 

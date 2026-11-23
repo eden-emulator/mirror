@@ -9,6 +9,7 @@
 #include <array>
 #include <bitset>
 #include <cmath>
+#include <functional>
 #include <limits>
 #include <optional>
 #include <type_traits>
@@ -3096,6 +3097,7 @@ public:
     enum class EngineHint : u32 {
         None = 0x0,
         OnHLEMacro = 0x1,
+        OnHLEMultiDrawArrays = 0x2,
     };
 
     EngineHint engine_state{EngineHint::None};
@@ -3124,7 +3126,15 @@ public:
     State state{};
 
     /// Reads a register value located at the input method address
-    u32 GetRegisterValue(u32 method) const;
+    u32 GetRegisterValue(u32 method);
+
+    using IndirectStateReader = std::function<bool(bool, std::array<u32, 8>&)>;
+    void DeferIndirectState(IndirectStateReader reader, u32 topology,
+                            Regs::PrimitiveTopology draw_topology);
+    void ResolveIndirectState(bool wait = true);
+    void ResolveIndirectDrawState();
+    void DiscardIndirectDrawState();
+    void DiscardIndirectGeometryState();
 
     /// Write the value to the register identified by method.
     void CallMethod(VideoCore::Host& system, u32 method, u32 method_argument, bool is_last_call) override;
@@ -3166,11 +3176,39 @@ public:
         return 0;
     }
 
-    void RefreshParameters() {
+    GPUVAddr GetMacroRange(size_t index, size_t words) const {
+        const size_t range_start = index;
+        if (words == 0) {
+            return 0;
+        }
+        GPUVAddr start{};
+        size_t base{};
+        for (const auto& [addr, count] : macro_segments) {
+            if (index < base + count) {
+                const size_t offset = index - base;
+                const size_t read = (std::min)(words, count - offset);
+                const GPUVAddr current = addr + offset * sizeof(u32);
+                if (addr == 0 || (start != 0 && current != start)) {
+                    return 0;
+                }
+                if (read == words) {
+                    return current - (index - range_start) * sizeof(u32);
+                }
+                start = current + read * sizeof(u32);
+                index += read;
+                words -= read;
+            }
+            base += count;
+        }
+        return 0;
+    }
+
+    void RefreshParameters(size_t first = 0,
+                           size_t count = (std::numeric_limits<size_t>::max)()) {
         if (!current_macro_dirty) {
             return;
         }
-        RefreshParametersImpl();
+        RefreshParametersImpl(first, count);
     }
 
     bool AnyParametersDirty() const {
@@ -3244,7 +3282,7 @@ private:
     /// Handles writes to syncing register.
     void ProcessSyncPoint();
 
-    void RefreshParametersImpl();
+    void RefreshParametersImpl(size_t first, size_t count);
 
     bool IsMethodExecutable(u32 method);
 
@@ -3269,6 +3307,24 @@ private:
 
     std::vector<std::pair<GPUVAddr, size_t>> macro_segments;
     bool current_macro_dirty{};
+
+    static constexpr std::array<u32, 5> indirect_state_methods{0xD09, 0x35D, 0x35E, 0x586, 0x585};
+    struct PendingIndirectState {
+        IndirectStateReader reader;
+        std::array<u64, 5> register_versions;
+        std::array<u64, 5> shadow_versions;
+        u64 draw_version;
+        u64 geometry_version;
+        u32 topology;
+        Regs::PrimitiveTopology draw_topology;
+        u32 base_index;
+        bool track_shadow;
+    };
+    std::vector<PendingIndirectState> pending_indirect_states;
+    std::array<u64, 5> indirect_register_versions{};
+    std::array<u64, 5> indirect_shadow_versions{};
+    u64 indirect_draw_version{};
+    u64 indirect_geometry_version{};
 };
 
 #define ASSERT_REG_POSITION(field_name, position)                                                  \

@@ -84,6 +84,8 @@ public:
 
     void Draw(bool is_indexed, u32 instance_count) override;
     void DrawIndirect() override;
+    bool DrawArraysIndirectCount(GPUVAddr count, GPUVAddr records, u32 first, u32 end, u32 stride, u32 topology) override;
+    bool DrawIndexedIndirectCount(GPUVAddr count, GPUVAddr records, u32 first, u32 end, u32 stride, u32 topology) override;
     void DrawTexture() override;
     void Clear(u32 layer_count) override;
     void DispatchCompute() override;
@@ -168,6 +170,8 @@ private:
     bool split_attribute_handles{};
 
     void FlushWork();
+    void PruneIndirectSnapshots();
+    bool DrawMultiIndirectCount(GPUVAddr count, GPUVAddr records, u32 first, u32 end, u32 stride, u32 topology, bool indexed);
 
     void UpdateDynamicStates();
 
@@ -215,6 +219,13 @@ private:
     Scheduler& scheduler;
 
     StagingBufferPool staging_pool;
+    struct IndirectSnapshot {
+        StagingBufferRef commands{};
+        StagingBufferRef state{};
+        u64 tick{};
+    };
+    std::unique_ptr<DrawIndirectCountPass> draw_indirect_count_pass;
+    std::vector<std::shared_ptr<IndirectSnapshot>> indirect_snapshots;
     DescriptorPool descriptor_pool;
     GuestDescriptorQueue guest_descriptor_queue;
     ComputePassDescriptorQueue compute_pass_descriptor_queue;

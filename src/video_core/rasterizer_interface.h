@@ -48,6 +48,14 @@ public:
     /// Dispatches an indirect draw invocation
     virtual void DrawIndirect() {}
 
+    virtual bool DrawArraysIndirectCount(GPUVAddr, GPUVAddr, u32, u32, u32, u32) {
+        return false;
+    }
+
+    virtual bool DrawIndexedIndirectCount(GPUVAddr, GPUVAddr, u32, u32, u32, u32) {
+        return false;
+    }
+
     /// Dispatches an draw texture invocation
     virtual void DrawTexture() = 0;
 

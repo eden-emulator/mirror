@@ -123,8 +123,15 @@ struct HLE_MultiLayerClear final {
     void Execute(VideoCore::Host& system, Engines::Maxwell3D& maxwell3d, std::span<const u32> parameters, [[maybe_unused]] u32 method);
 };
 struct HLE_MultiDrawIndexedIndirectCount final {
-    void Execute(VideoCore::Host& system, Engines::Maxwell3D& maxwell3d, std::span<const u32> parameters, [[maybe_unused]] u32 method);
-    void Fallback(VideoCore::Host& system, Engines::Maxwell3D& maxwell3d, std::span<const u32> parameters);
+    explicit HLE_MultiDrawIndexedIndirectCount(std::span<const u32> code_) : code{code_} {}
+    void Execute(VideoCore::Host& system, Engines::Maxwell3D& maxwell3d, std::span<const u32> parameters, u32 method);
+    std::span<const u32> code;
+};
+struct HLE_MultiDrawArraysIndirectCount final {
+    explicit HLE_MultiDrawArraysIndirectCount(std::span<const u32> code_) : code{code_} {}
+    void Execute(VideoCore::Host& system, Engines::Maxwell3D& maxwell3d,
+                 std::span<const u32> parameters, u32 method);
+    std::span<const u32> code;
 };
 struct HLE_DrawIndirectByteCount final {
     void Execute(VideoCore::Host& system, Engines::Maxwell3D& maxwell3d, std::span<const u32> parameters, [[maybe_unused]] u32 method);
@@ -213,7 +220,8 @@ using AnyCachedMacro = std::variant<
     HLE_DrawIndirectByteCount,
     MacroInterpreterImpl,
     // Used for JIT x86 macro
-    std::unique_ptr<DynamicCachedMacro>
+    std::unique_ptr<DynamicCachedMacro>,
+    HLE_MultiDrawArraysIndirectCount
 >;
 
 struct MacroEngine {

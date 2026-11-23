@@ -351,6 +351,10 @@ public:
         return properties.properties.limits.maxStorageBufferRange;
     }
 
+    u32 GetMaxDrawIndirectCount() const {
+        return extensions.draw_indirect_count ? properties.properties.limits.maxDrawIndirectCount : 0;
+    }
+
     std::array<u32, 3> GetMaxComputeWorkGroupCount() const {
         const auto& count = properties.properties.limits.maxComputeWorkGroupCount;
         return {count[0], count[1], count[2]};

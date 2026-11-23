@@ -221,19 +221,22 @@ void Maxwell3D::ProcessMacro(VideoCore::Host& system, u32 method, const u32* bas
     }
 }
 
-void Maxwell3D::RefreshParametersImpl() {
-    if (!Settings::IsGPULevelHigh()) {
-        return;
-    }
+void Maxwell3D::RefreshParametersImpl(size_t first, size_t count) {
+    ASSERT(first <= macro_params.size());
+    const size_t end = first + (std::min)(count, macro_params.size() - first);
     size_t current_index = 0;
-    for (auto& segment : macro_segments) {
-        if (segment.first == 0) {
-            current_index += segment.second;
-            continue;
+    for (const auto& [addr, segment_count] : macro_segments) {
+        const size_t read_first = (std::max)(first, current_index);
+        const size_t read_end = (std::min)(end, current_index + segment_count);
+        if (addr != 0 && read_first < read_end) {
+            memory_manager.ReadBlock(addr + (read_first - current_index) * sizeof(u32),
+                                     macro_params.data() + read_first,
+                                     (read_end - read_first) * sizeof(u32));
         }
-        memory_manager.ReadBlock(segment.first, &macro_params[current_index],
-                                 sizeof(u32) * segment.second);
-        current_index += segment.second;
+        current_index += segment_count;
+        if (current_index >= end) {
+            break;
+        }
     }
 }
 
@@ -271,6 +274,19 @@ size_t Maxwell3D::EstimateIndexBufferSize() {
 }
 
 u32 Maxwell3D::ProcessShadowRam(u32 method, u32 argument) {
+    if (!pending_indirect_states.empty()) {
+        for (size_t i = 0; i < indirect_state_methods.size(); ++i) {
+            if (method != indirect_state_methods[i]) {
+                continue;
+            }
+            if (shadow_state.shadow_ram_control == Regs::ShadowRamControl::Replay) {
+                ResolveIndirectState();
+            } else if (shadow_state.shadow_ram_control == Regs::ShadowRamControl::Track ||
+                       shadow_state.shadow_ram_control == Regs::ShadowRamControl::TrackWithFilter) {
+                ++indirect_shadow_versions[i];
+            }
+        }
+    }
     // Keep track of the register value in shadow_state when requested.
     auto const c = shadow_state.shadow_ram_control;
     if (c == Regs::ShadowRamControl::Track || c == Regs::ShadowRamControl::TrackWithFilter)
@@ -284,12 +300,12 @@ void Maxwell3D::ConsumeSinkImpl(VideoCore::Host& system) {
     const auto control = shadow_state.shadow_ram_control;
     if (control == Regs::ShadowRamControl::Track || control == Regs::ShadowRamControl::TrackWithFilter) {
         for (auto [method, value] : method_sink) {
-            shadow_state.reg_array[method] = value;
+            ProcessShadowRam(method, value);
             ProcessDirtyRegisters(method, value);
         }
     } else if (control == Regs::ShadowRamControl::Replay) {
         for (auto [method, value] : method_sink)
-            ProcessDirtyRegisters(method, shadow_state.reg_array[method]);
+            ProcessDirtyRegisters(method, ProcessShadowRam(method, value));
     } else {
         for (auto [method, value] : method_sink)
             ProcessDirtyRegisters(method, value);
@@ -298,6 +314,13 @@ void Maxwell3D::ConsumeSinkImpl(VideoCore::Host& system) {
 }
 
 void Maxwell3D::ProcessDirtyRegisters(u32 method, u32 argument) {
+    if (!pending_indirect_states.empty()) {
+        for (size_t i = 0; i < indirect_state_methods.size(); ++i) {
+            if (method == indirect_state_methods[i]) {
+                ++indirect_register_versions[i];
+            }
+        }
+    }
     regs.reg_array[method] = argument;
     for (auto const& table : dirty.tables)
         dirty.flags[table[method]] = true;
@@ -654,9 +677,108 @@ Texture::TSCEntry Maxwell3D::GetTSCEntry(u32 tsc_index) const {
     return tsc_entry;
 }
 
-u32 Maxwell3D::GetRegisterValue(u32 method) const {
+u32 Maxwell3D::GetRegisterValue(u32 method) {
     ASSERT(method < Regs::NUM_REGS && "Invalid Maxwell3D register");
+    for (size_t i = 0; !pending_indirect_states.empty() && i < indirect_state_methods.size(); ++i) {
+        if (method == indirect_state_methods[i]) {
+            for (const auto& pending : pending_indirect_states) {
+                if (pending.register_versions[i] == indirect_register_versions[i]) {
+                    ResolveIndirectState();
+                    break;
+                }
+            }
+        }
+    }
     return regs.reg_array[method];
+}
+
+void Maxwell3D::DeferIndirectState(IndirectStateReader reader, u32 topology,
+                                  Regs::PrimitiveTopology draw_topology) {
+    ResolveIndirectState(false);
+    // Bound retained snapshots if the guest never observes the resulting registers.
+    if (pending_indirect_states.size() >= 64) {
+        ResolveIndirectState();
+    }
+    pending_indirect_states.push_back({
+        std::move(reader), indirect_register_versions, indirect_shadow_versions,
+        indirect_draw_version, indirect_geometry_version, topology, draw_topology,
+        regs.global_base_vertex_index,
+        shadow_state.shadow_ram_control == Regs::ShadowRamControl::Track ||
+            shadow_state.shadow_ram_control == Regs::ShadowRamControl::TrackWithFilter,
+    });
+}
+
+void Maxwell3D::ResolveIndirectState(bool wait) {
+    if (pending_indirect_states.empty()) {
+        return;
+    }
+    std::array<u32, 8> data{};
+    if (wait) {
+        // Waiting for the newest snapshot also completes all earlier snapshots.
+        pending_indirect_states.back().reader(true, data);
+    }
+    size_t consumed{};
+    for (auto& pending : pending_indirect_states) {
+        if (!pending.reader(false, data)) {
+            break;
+        }
+        ++consumed;
+        if (data[1] == 0) {
+            continue;
+        }
+        const u32 subsequent = (pending.topology & ~(3U << 26)) | (1U << 26);
+        const std::array values{subsequent, data[2], data[4],
+                                data[5] > 1 ? subsequent : pending.topology, 0U};
+        for (size_t i = 0; i < indirect_state_methods.size(); ++i) {
+            if (i >= 2 && data[5] == 0) {
+                continue;
+            }
+            const u32 method = indirect_state_methods[i];
+            if (pending.register_versions[i] == indirect_register_versions[i]) {
+                regs.reg_array[method] = values[i];
+                for (const auto& table : dirty.tables) {
+                    dirty.flags[table[method]] = true;
+                }
+            }
+            if (pending.track_shadow && pending.shadow_versions[i] == indirect_shadow_versions[i]) {
+                shadow_state.reg_array[method] = values[i];
+            }
+        }
+        if (data[5] != 0 && pending.draw_version == indirect_draw_version) {
+            auto& draw_state = draw_manager.draw_state;
+            draw_state.draw_mode = data[5] > 1 ? DrawManager::DrawMode::Instance
+                                               : DrawManager::DrawMode::General;
+            if (pending.geometry_version == indirect_geometry_version) {
+                draw_state.topology = pending.draw_topology;
+                draw_state.vertex_buffer.first = data[5] > 1 ? data[2] : data[3];
+                draw_state.vertex_buffer.count = data[4];
+                draw_state.base_instance = data[5] > 1 ? 0 : data[6];
+                draw_state.base_index = pending.base_index;
+                draw_state.draw_indexed = false;
+            }
+            draw_state.instance_count = 0;
+        }
+    }
+    pending_indirect_states.erase(pending_indirect_states.begin(),
+                                  pending_indirect_states.begin() + consumed);
+}
+
+void Maxwell3D::ResolveIndirectDrawState() {
+    for (const auto& pending : pending_indirect_states) {
+        if (pending.draw_version == indirect_draw_version) {
+            ResolveIndirectState();
+            return;
+        }
+    }
+}
+
+void Maxwell3D::DiscardIndirectDrawState() {
+    ++indirect_draw_version;
+    ++indirect_geometry_version;
+}
+
+void Maxwell3D::DiscardIndirectGeometryState() {
+    ++indirect_geometry_version;
 }
 
 void Maxwell3D::SetHLEReplacementAttributeType(u32 bank, u32 offset,

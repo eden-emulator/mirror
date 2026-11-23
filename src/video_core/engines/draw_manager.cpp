@@ -26,11 +26,13 @@ void Maxwell3D::DrawManager::ProcessMethodCall(Maxwell3D& maxwell3d, u32 method,
     case MAXWELL3D_REG_INDEX(index_buffer.first):
         break;
     case MAXWELL3D_REG_INDEX(index_buffer.count):
+        maxwell3d.ResolveIndirectDrawState();
         draw_state.draw_indexed = true;
         break;
     case MAXWELL3D_REG_INDEX(index_buffer32_subsequent):
     case MAXWELL3D_REG_INDEX(index_buffer16_subsequent):
     case MAXWELL3D_REG_INDEX(index_buffer8_subsequent):
+        maxwell3d.ResolveIndirectDrawState();
         draw_state.instance_count++;
         [[fallthrough]];
     case MAXWELL3D_REG_INDEX(index_buffer32_first):
@@ -81,6 +83,7 @@ void Maxwell3D::DrawManager::DrawDeferred(Maxwell3D& maxwell3d) {
 }
 
 void Maxwell3D::DrawManager::DrawArray(Maxwell3D& maxwell3d, Maxwell3D::Regs::PrimitiveTopology topology, u32 vertex_first, u32 vertex_count, u32 base_instance, u32 num_instances) {
+    maxwell3d.DiscardIndirectGeometryState();
     draw_state.topology = topology;
     draw_state.vertex_buffer.first = vertex_first;
     draw_state.vertex_buffer.count = vertex_count;
@@ -89,6 +92,8 @@ void Maxwell3D::DrawManager::DrawArray(Maxwell3D& maxwell3d, Maxwell3D::Regs::Pr
 }
 
 void Maxwell3D::DrawManager::DrawArrayInstanced(Maxwell3D& maxwell3d, Maxwell3D::Regs::PrimitiveTopology topology, u32 vertex_first, u32 vertex_count, bool subsequent) {
+    maxwell3d.ResolveIndirectDrawState();
+    maxwell3d.DiscardIndirectDrawState();
     draw_state.topology = topology;
     draw_state.vertex_buffer.first = vertex_first;
     draw_state.vertex_buffer.count = vertex_count;
@@ -102,6 +107,7 @@ void Maxwell3D::DrawManager::DrawArrayInstanced(Maxwell3D& maxwell3d, Maxwell3D:
 }
 
 void Maxwell3D::DrawManager::DrawIndex(Maxwell3D& maxwell3d, Maxwell3D::Regs::PrimitiveTopology topology, u32 index_first, u32 index_count, u32 base_index, u32 base_instance, u32 num_instances) {
+    maxwell3d.DiscardIndirectGeometryState();
     draw_state.topology = topology;
     draw_state.index_buffer = maxwell3d.regs.index_buffer;
     draw_state.index_buffer.first = index_first;
@@ -112,11 +118,13 @@ void Maxwell3D::DrawManager::DrawIndex(Maxwell3D& maxwell3d, Maxwell3D::Regs::Pr
 }
 
 void Maxwell3D::DrawManager::DrawArrayIndirect(Maxwell3D& maxwell3d, Maxwell3D::Regs::PrimitiveTopology topology) {
+    maxwell3d.DiscardIndirectGeometryState();
     draw_state.topology = topology;
     ProcessDrawIndirect(maxwell3d);
 }
 
 void Maxwell3D::DrawManager::DrawIndexedIndirect(Maxwell3D& maxwell3d, Maxwell3D::Regs::PrimitiveTopology topology, u32 index_first, u32 index_count) {
+    maxwell3d.DiscardIndirectGeometryState();
     draw_state.topology = topology;
     draw_state.index_buffer = maxwell3d.regs.index_buffer;
     draw_state.index_buffer.first = index_first;
@@ -125,6 +133,8 @@ void Maxwell3D::DrawManager::DrawIndexedIndirect(Maxwell3D& maxwell3d, Maxwell3D
 }
 
 void Maxwell3D::DrawManager::SetInlineIndexBuffer(Maxwell3D& maxwell3d, u32 index) {
+    maxwell3d.ResolveIndirectDrawState();
+    maxwell3d.DiscardIndirectDrawState();
     draw_state.inline_index_draw_indexes.push_back(u8(index & 0x000000ff));
     draw_state.inline_index_draw_indexes.push_back(u8((index & 0x0000ff00) >> 8));
     draw_state.inline_index_draw_indexes.push_back(u8((index & 0x00ff0000) >> 16));
@@ -134,6 +144,8 @@ void Maxwell3D::DrawManager::SetInlineIndexBuffer(Maxwell3D& maxwell3d, u32 inde
 
 void Maxwell3D::DrawManager::SetInlineIndexBuffer(Maxwell3D& maxwell3d, u32 method,
                                                   const u32* base_start, u32 amount) {
+    maxwell3d.ResolveIndirectDrawState();
+    maxwell3d.DiscardIndirectDrawState();
     auto& index_buffer = draw_state.inline_index_draw_indexes;
     switch (method) {
     case MAXWELL3D_REG_INDEX(draw_inline_index): {
@@ -174,10 +186,12 @@ void Maxwell3D::DrawManager::DrawBegin(Maxwell3D& maxwell3d) {
     auto reset_instance_count = maxwell3d.regs.draw.instance_id == Maxwell3D::Regs::Draw::InstanceId::First;
     auto increment_instance_count = maxwell3d.regs.draw.instance_id == Maxwell3D::Regs::Draw::InstanceId::Subsequent;
     if (reset_instance_count) {
+        maxwell3d.DiscardIndirectDrawState();
         DrawDeferred(maxwell3d);
         draw_state.instance_count = 0;
         draw_state.draw_mode = DrawMode::General;
     } else if (increment_instance_count) {
+        maxwell3d.ResolveIndirectDrawState();
         draw_state.instance_count++;
         draw_state.draw_mode = DrawMode::Instance;
     }
@@ -185,6 +199,9 @@ void Maxwell3D::DrawManager::DrawBegin(Maxwell3D& maxwell3d) {
 }
 
 void Maxwell3D::DrawManager::DrawEnd(Maxwell3D& maxwell3d, u32 instance_count, bool force_draw) {
+    maxwell3d.ResolveIndirectDrawState();
+    maxwell3d.GetRegisterValue(MAXWELL3D_REG_INDEX(vertex_buffer.first));
+    maxwell3d.GetRegisterValue(MAXWELL3D_REG_INDEX(vertex_buffer.count));
     switch (draw_state.draw_mode) {
     case DrawMode::Instance:
         if (!force_draw) {
@@ -217,6 +234,7 @@ void Maxwell3D::DrawManager::DrawEnd(Maxwell3D& maxwell3d, u32 instance_count, b
 }
 
 void Maxwell3D::DrawManager::DrawIndexSmall(Maxwell3D& maxwell3d, u32 argument) {
+    maxwell3d.DiscardIndirectGeometryState();
     Maxwell3D::Regs::IndexBufferSmall index_small_params{argument};
     draw_state.base_instance = maxwell3d.regs.global_base_instance_index;
     draw_state.base_index = maxwell3d.regs.global_base_vertex_index;

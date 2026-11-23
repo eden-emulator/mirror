@@ -115,6 +115,15 @@ public:
         return uses_attribute_handle;
     }
 
+    [[nodiscard]] bool SupportsIndirectParameters() const noexcept {
+        return !uses_attribute_handle &&
+               std::none_of(stage_infos.begin(), stage_infos.end(),
+                            [](const Shader::Info& info) {
+                                return info.uses_cbuf_indirect ||
+                                       info.constant_buffer_used_sizes[0] > 0x640;
+                            });
+    }
+
     /// Handle bound to those textures by the next Configure.
     void SetAttributeHandle(u32 handle) noexcept {
         attribute_handle = handle;
