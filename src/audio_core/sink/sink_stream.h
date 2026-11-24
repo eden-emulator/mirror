@@ -69,12 +69,15 @@ public:
      * @param resume - Set to true if this is resuming the stream a previously-active stream.
      *                 Default false.
      */
-    virtual void Start(bool resume = false) {}
+    virtual void Start(bool resume = false);
 
     /**
      * Stop the sink stream.
      */
-    virtual void Stop() {}
+    virtual void Stop();
+
+    /// Suspend host audio without losing the stream's guest start/stop state.
+    void SetSystemPaused(bool is_paused);
 
     /**
      * Check if the stream is paused.
@@ -214,6 +217,8 @@ public:
     void WaitFreeSpace(std::stop_token stop_token);
 
 protected:
+    virtual void SetRunning(bool running) {}
+
     /**
      * Unblocks the ADSP if the stream is paused.
      */
@@ -234,6 +239,12 @@ protected:
     std::string name{};
 
 private:
+    void SetPaused(bool is_paused);
+
+    std::mutex state_mutex;
+    bool system_paused{};
+    bool resume_on_system_resume{};
+
     /// Ring buffer of the samples waiting to be played or consumed
     Common::RingBuffer<s16, 0x10000> samples_buffer;
     /// Audio buffers queued and waiting to play
