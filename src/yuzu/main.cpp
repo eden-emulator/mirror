@@ -65,7 +65,7 @@ static Qt::HighDpiScaleFactorRoundingPolicy GetHighDpiRoundingPolicy() {
 }
 
 int main(int argc, char* argv[]) {
-    std::vector<std::string> args{argv + 1, argv + argc};
+    std::vector<std::string> args{argv, argv + argc};
 #if YUZU_ROOM
     if (std::ranges::find(args, "--room") != args.end()) {
         LaunchRoom(argc, argv, true);
