@@ -43,6 +43,7 @@ namespace {
 using boost::container::small_vector;
 using boost::container::static_vector;
 using Shader::ImageBufferDescriptor;
+using Shader::Backend::SPIRV::NUM_POINTER_WINDOW_WORDS;
 using Shader::Backend::SPIRV::RENDERAREA_LAYOUT_OFFSET;
 using Shader::Backend::SPIRV::RESCALING_LAYOUT_DOWN_FACTOR_OFFSET;
 using Shader::Backend::SPIRV::RESCALING_LAYOUT_WORDS_OFFSET;
@@ -277,6 +278,7 @@ GraphicsPipeline::GraphicsPipeline(
                                                 [](const auto& d) { return d.is_written; }) ||
                             std::ranges::any_of(info->image_descriptors,
                                                 [](const auto& d) { return d.is_written; });
+        uses_pointer_windows |= info->uses_pointer_windows;
         stage_infos[stage] = *info;
         enabled_uniform_buffer_masks[stage] = info->constant_buffer_mask;
         std::ranges::copy(info->constant_buffer_used_sizes, uniform_buffer_sizes[stage].begin());
@@ -373,6 +375,11 @@ bool GraphicsPipeline::ConfigureImpl(bool is_indexed) {
 
     const auto& regs{maxwell3d->regs};
     const bool via_header_index{regs.sampler_binding == Maxwell::SamplerBinding::ViaHeaderBinding};
+    std::array<GlobalMemoryWindow, Shader::NUM_POINTER_WINDOWS> pointer_windows{};
+    if (uses_pointer_windows) {
+        pointer_windows = ComputePointerWindows();
+        pointer_window_words.fill(0);
+    }
     const auto config_stage{[&](size_t stage) LAMBDA_FORCEINLINE {
         const Shader::Info& info{stage_infos[stage]};
         buffer_cache.UnbindGraphicsStorageBuffers(stage);
@@ -380,6 +387,23 @@ bool GraphicsPipeline::ConfigureImpl(bool is_indexed) {
             size_t ssbo_index{};
             for (const auto& desc : info.storage_buffers_descriptors) {
                 ASSERT(desc.count == 1);
+                if (desc.is_pointer_window) {
+                    // Unused windows are bound to a valid range but get a zero size, so the
+                    // shader never accesses them
+                    const GlobalMemoryWindow& window{pointer_windows[desc.cbuf_offset]};
+                    const bool is_used{window.size != 0};
+                    const GlobalMemoryWindow& bound{is_used ? window : pointer_windows[0]};
+                    const auto [base, size] = buffer_cache.BindGraphicsStorageBufferRange(
+                        stage, ssbo_index, bound.gpu_addr, (std::max<u32>)(bound.size, 0x100),
+                        desc.is_written && is_used);
+                    u32* const words{&pointer_window_words[desc.cbuf_offset *
+                                                           NUM_POINTER_WINDOW_WORDS]};
+                    words[0] = static_cast<u32>(base);
+                    words[1] = static_cast<u32>(base >> 32);
+                    words[2] = is_used ? size : 0;
+                    ++ssbo_index;
+                    continue;
+                }
                 buffer_cache.BindGraphicsStorageBuffer(stage, ssbo_index, desc.cbuf_index,
                                                        desc.cbuf_offset, desc.is_written);
                 ++ssbo_index;
@@ -591,6 +615,120 @@ bool GraphicsPipeline::ConfigureImpl(bool is_indexed) {
     return ConfigureDraw(rescaling, render_area);
 }
 
+bool GraphicsPipeline::IsDeviceContiguous(GPUVAddr begin, GPUVAddr end) const {
+    const std::optional<DAddr> base{gpu_memory->GpuToCpuAddress(begin)};
+    if (!base) {
+        return false;
+    }
+    for (GPUVAddr page = Common::AlignDown(begin, Core::DEVICE_PAGESIZE) + Core::DEVICE_PAGESIZE;
+         page < end; page += Core::DEVICE_PAGESIZE) {
+        const std::optional<DAddr> device_addr{gpu_memory->GpuToCpuAddress(page)};
+        if (!device_addr || *device_addr != *base + (page - begin)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+auto GraphicsPipeline::ComputePointerWindows()
+    -> std::array<GlobalMemoryWindow, Shader::NUM_POINTER_WINDOWS> {
+    // Bytes assumed to be reachable past each pointer (e.g. the fields of a struct)
+    static constexpr u64 ACCESS_SIZE = 0x100;
+    static constexpr u64 MAX_WINDOW_SIZE = 4ULL << 20;
+    static constexpr u32 MAX_TABLE_SIZE = 0x10000;
+
+    boost::container::small_vector<GPUVAddr, 64> pointers;
+    GPUVAddr first_table{};
+    for (size_t stage = 0; stage < NUM_STAGES; ++stage) {
+        const auto& cbufs{maxwell3d->state.shader_stages[stage].const_buffers};
+        for (const auto& table_desc : stage_infos[stage].pointer_table_descriptors) {
+            const auto& cbuf{cbufs[table_desc.cbuf_index]};
+            if (!cbuf.enabled) {
+                continue;
+            }
+            const GPUVAddr descriptor_addr{cbuf.address + table_desc.cbuf_offset};
+            const GPUVAddr table_addr{gpu_memory->Read<u64>(descriptor_addr)};
+            const u32 table_size{
+                (std::min)(gpu_memory->Read<u32>(descriptor_addr + 8), MAX_TABLE_SIZE)};
+            const size_t num_entries{table_size / sizeof(u64)};
+            if (table_addr == 0 || num_entries == 0) {
+                continue;
+            }
+            if (first_table == 0) {
+                first_table = table_addr;
+            }
+            pointer_table_scratch.resize(num_entries);
+            gpu_memory->ReadBlockUnsafe(table_addr, pointer_table_scratch.data(),
+                                        num_entries * sizeof(u64));
+            for (const u64 pointer : pointer_table_scratch) {
+                // GPU virtual addresses are 40 bits wide
+                if (pointer != 0 && (pointer >> 40) == 0 &&
+                    gpu_memory->GpuToCpuAddress(pointer)) {
+                    pointers.push_back(pointer);
+                }
+            }
+        }
+    }
+    std::ranges::sort(pointers);
+    const auto [first, last] = std::ranges::unique(pointers);
+    pointers.erase(first, last);
+
+    // Group the pointed-to memory into as few windows as possible. Prefer tight windows and
+    // only bridge larger gaps when the pointers do not fit otherwise.
+    static constexpr std::array<u64, 3> MAX_GAPS{0x10000, 1ULL << 20, MAX_WINDOW_SIZE};
+    std::array<GlobalMemoryWindow, Shader::NUM_POINTER_WINDOWS> windows{};
+    size_t num_windows{};
+    bool fits{};
+    for (const u64 max_gap : MAX_GAPS) {
+        windows = {};
+        num_windows = 0;
+        fits = true;
+        for (const GPUVAddr pointer : pointers) {
+            const GPUVAddr access_end{pointer + ACCESS_SIZE};
+            if (num_windows > 0) {
+                GlobalMemoryWindow& window{windows[num_windows - 1]};
+                const GPUVAddr window_end{window.gpu_addr + window.size};
+                if (pointer <= window_end + max_gap &&
+                    access_end - window.gpu_addr <= MAX_WINDOW_SIZE &&
+                    IsDeviceContiguous(window_end - 1, access_end)) {
+                    window.size =
+                        static_cast<u32>((std::max)(window_end, access_end) - window.gpu_addr);
+                    continue;
+                }
+            }
+            if (num_windows == windows.size()) {
+                fits = false;
+                break;
+            }
+            GPUVAddr window_end{access_end};
+            if (!IsDeviceContiguous(pointer, window_end)) {
+                window_end = Common::AlignUp(pointer + 1, Core::DEVICE_PAGESIZE);
+            }
+            windows[num_windows++] = GlobalMemoryWindow{
+                .gpu_addr = pointer,
+                .size = static_cast<u32>(window_end - pointer),
+            };
+        }
+        if (fits) {
+            break;
+        }
+    }
+    if (!fits) {
+        static bool warned = false;
+        if (!warned) {
+            warned = true;
+            LOG_WARNING(Render_Vulkan,
+                        "Pointers do not fit in {} global memory windows, some writes are lost",
+                        windows.size());
+        }
+    }
+    if (num_windows == 0 && first_table != 0) {
+        // Keep a valid range to bind unused windows to; they are disabled with a zero size
+        windows[0] = GlobalMemoryWindow{.gpu_addr = first_table, .size = 0};
+    }
+    return windows;
+}
+
 bool GraphicsPipeline::ConfigureDraw(const RescalingPushConstant& rescaling,
                                      const RenderAreaPushConstant& render_area) {
     const void* const descriptor_data{guest_descriptor_queue.UpdateData()};
@@ -626,6 +764,12 @@ bool GraphicsPipeline::ConfigureDraw(const RescalingPushConstant& rescaling,
     }
 
     const VkDeviceAddress storage_buffer_table{buffer_cache.runtime.UploadStorageBufferAddresses()};
+    VkDeviceAddress pointer_windows_table{};
+    if (uses_pointer_windows) {
+        const auto ref{buffer_cache.runtime.UploadStagingBuffer(sizeof(pointer_window_words))};
+        std::memcpy(ref.mapped_span.data(), pointer_window_words.data(), sizeof(pointer_window_words));
+        pointer_windows_table = ref.device_address + ref.offset;
+    }
     scheduler.RequestRenderpass(texture_cache.GetFramebuffer());
     if (!is_built.load(std::memory_order::relaxed)) {
         // Wait for the pipeline to be built
@@ -660,11 +804,13 @@ bool GraphicsPipeline::ConfigureDraw(const RescalingPushConstant& rescaling,
         }
     }
     scheduler.Record([this, descriptor_data, bind_pipeline, update_descriptors,
-                      storage_buffer_table, descriptor_buffer_offset, descriptor_buffer_chunk,
+                      storage_buffer_table, pointer_windows_table,
+                      descriptor_buffer_offset, descriptor_buffer_chunk,
                       bind_descriptor_buffer, rescaling_data = rescaling.Data(), is_rescaling,
                       tiling_data = rescaling.TilingData(),
                       update_rescaling, uses_render_area = render_area.uses_render_area,
-                      render_area_data = render_area.words](vk::CommandBuffer cmdbuf) {
+                      render_area_data = render_area.words,
+                      uses_windows = uses_pointer_windows](vk::CommandBuffer cmdbuf) {
         if (bind_descriptor_buffer) {
             const VkDescriptorBufferBindingInfoEXT binding_info{
                 descriptor_buffer_ring.BindingInfo(descriptor_buffer_chunk)};
@@ -685,6 +831,11 @@ bool GraphicsPipeline::ConfigureDraw(const RescalingPushConstant& rescaling,
         cmdbuf.PushConstants(*pipeline_layout, VK_SHADER_STAGE_ALL_GRAPHICS,
                              Shader::Backend::SPIRV::STORAGE_BUFFER_TABLE_OFFSET,
                              sizeof(storage_buffer_table), &storage_buffer_table);
+        if (uses_windows) {
+            cmdbuf.PushConstants(*pipeline_layout, VK_SHADER_STAGE_ALL_GRAPHICS,
+                                 Shader::Backend::SPIRV::POINTER_WINDOWS_TABLE_OFFSET,
+                                 sizeof(pointer_windows_table), &pointer_windows_table);
+        }
         if (update_rescaling) {
             const f32 config_down_factor{Settings::values.resolution_info.down_factor};
             const f32 scale_down_factor{is_rescaling ? config_down_factor : 1.0f};

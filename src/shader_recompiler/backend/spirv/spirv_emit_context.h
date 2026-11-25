@@ -272,6 +272,7 @@ public:
     std::map<u32, Id> physical_storage_cas_functions;
     u32 storage_buffer_index_base{};
     u32 storage_buffer_table_member_index{};
+    u32 pointer_windows_table_member_index{};
     Id large_storage_buffer_address{};
     bool emitting_large_storage{};
     std::vector<TextureBufferDefinition> texture_buffers;

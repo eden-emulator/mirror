@@ -176,8 +176,22 @@ struct StorageBufferDescriptor {
     u32 cbuf_offset;
     u32 count;
     bool is_written;
+    /// When true, this descriptor is a host-managed window for global memory reached through
+    /// pointers loaded from memory, and cbuf_offset holds the window index instead.
+    bool is_pointer_window{};
 
     auto operator<=>(const StorageBufferDescriptor&) const = default;
+};
+
+/// Number of storage buffer windows bound for global memory accessed through loaded pointers
+constexpr size_t NUM_POINTER_WINDOWS = 4;
+
+/// Storage buffer (described in a constant buffer) holding pointers used for global memory
+struct PointerTableDescriptor {
+    u32 cbuf_index;
+    u32 cbuf_offset;
+
+    auto operator<=>(const PointerTableDescriptor&) const = default;
 };
 
 struct TextureBufferDescriptor {
@@ -324,6 +338,7 @@ struct Info {
     bool uses_atomic_s32_max{};
     bool uses_int64_bit_atomics{};
     bool uses_global_memory{};
+    bool uses_nvn_global_memory{};
     bool uses_atomic_image_u32{};
     bool uses_shadow_lod{};
     bool uses_rescaling_uniform{};
@@ -338,6 +353,10 @@ struct Info {
     std::array<u32, MAX_CBUFS> constant_buffer_used_sizes{};
     u32 nvn_buffer_base{};
     std::bitset<16> nvn_buffer_used{};
+
+    /// Storage buffers whose contents are pointers dereferenced by global memory instructions
+    boost::container::static_vector<PointerTableDescriptor, 4> pointer_table_descriptors;
+    bool uses_pointer_windows{};
 
     bool requires_layer_emulation{};
     IR::Attribute emulated_layer{};

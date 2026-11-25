@@ -527,7 +527,9 @@ EmitContext::EmitContext(const Profile& profile_, const RuntimeInfo& runtime_inf
         }
         if (program.info.uses_global_memory) {
             for (u32 index = 0; index < program.info.storage_buffers_descriptors.size(); ++index) {
-                if (!program.info.nvn_buffer_used[index]) {
+                if (!program.info.storage_buffers_descriptors[index].is_pointer_window &&
+                    (index >= program.info.nvn_buffer_used.size() ||
+                     !program.info.nvn_buffer_used[index])) {
                     continue;
                 }
                 for (const auto opcode :
@@ -1047,21 +1049,40 @@ void EmitContext::DefineGlobalMemoryFunctions(const Info& info) {
         AddLabel();
         const size_t num_buffers{info.storage_buffers_descriptors.size()};
         for (size_t index = 0; index < num_buffers; ++index) {
-            if (!info.nvn_buffer_used[index]) {
-                continue;
-            }
             const auto& ssbo{info.storage_buffers_descriptors[index]};
-            const Id ssbo_addr_cbuf_offset{Const(ssbo.cbuf_offset / 8)};
-            const Id ssbo_size_cbuf_offset{Const(ssbo.cbuf_offset / 4 + 2)};
-            const Id ssbo_addr_pointer{OpAccessChain(
-                uniform_types.U32x2, cbufs[ssbo.cbuf_index].U32x2, zero, ssbo_addr_cbuf_offset)};
-            const Id ssbo_size_pointer{OpAccessChain(uniform_types.U32, cbufs[ssbo.cbuf_index].U32,
-                                                     zero, ssbo_size_cbuf_offset)};
+            Id ssbo_addr;
+            Id ssbo_size;
+            if (ssbo.is_pointer_window) {
+                const Id table_pointer{OpAccessChain(
+                    TypePointer(spv::StorageClass::PushConstant, U64), rescaling_push_constants,
+                    Const(pointer_windows_table_member_index))};
+                const Id table{OpLoad(U64, table_pointer)};
+                const Id window_address{OpIAdd(
+                    U64, table,
+                    Constant(U64, u64{ssbo.cbuf_offset} * NUM_POINTER_WINDOW_WORDS * sizeof(u32)))};
+                const Id window_pointer{OpConvertUToPtr(
+                    TypePointer(spv::StorageClass::PhysicalStorageBuffer, U32[4]), window_address)};
+                const Id window{OpLoad(U32[4], window_pointer, spv::MemoryAccessMask::Aligned,
+                                       u32{NUM_POINTER_WINDOW_WORDS * sizeof(u32)})};
+                const Id base_words{OpVectorShuffle(U32[2], window, window, 0, 1)};
+                ssbo_addr = OpBitcast(U64, base_words);
+                ssbo_size = OpUConvert(U64, OpCompositeExtract(U32[1], window, 2U));
+            } else {
+                if (!info.uses_nvn_global_memory || index >= info.nvn_buffer_used.size() || !info.nvn_buffer_used[index]) {
+                    continue;
+                }
+                const Id ssbo_addr_cbuf_offset{Const(ssbo.cbuf_offset / 8)};
+                const Id ssbo_size_cbuf_offset{Const(ssbo.cbuf_offset / 4 + 2)};
+                const Id ssbo_addr_pointer{OpAccessChain(
+                    uniform_types.U32x2, cbufs[ssbo.cbuf_index].U32x2, zero, ssbo_addr_cbuf_offset)};
+                const Id ssbo_size_pointer{OpAccessChain(uniform_types.U32, cbufs[ssbo.cbuf_index].U32,
+                                                         zero, ssbo_size_cbuf_offset)};
 
-            const u64 ssbo_align_mask{~(profile.min_ssbo_alignment - 1U)};
-            const Id unaligned_addr{OpBitcast(U64, OpLoad(U32[2], ssbo_addr_pointer))};
-            const Id ssbo_addr{OpBitwiseAnd(U64, unaligned_addr, Constant(U64, ssbo_align_mask))};
-            const Id ssbo_size{OpUConvert(U64, OpLoad(U32[1], ssbo_size_pointer))};
+                const u64 ssbo_align_mask{~(profile.min_ssbo_alignment - 1U)};
+                const Id unaligned_addr{OpBitcast(U64, OpLoad(U32[2], ssbo_addr_pointer))};
+                ssbo_addr = OpBitwiseAnd(U64, unaligned_addr, Constant(U64, ssbo_align_mask));
+                ssbo_size = OpUConvert(U64, OpLoad(U32[1], ssbo_size_pointer));
+            }
             const Id ssbo_end{OpIAdd(U64, ssbo_addr, ssbo_size)};
             const Id cond{OpLogicalAnd(U1, OpUGreaterThanEqual(U1, addr, ssbo_addr),
                                        OpULessThan(U1, addr, ssbo_end))};
@@ -1148,6 +1169,7 @@ void EmitContext::DefineRescalingInput(const Info& info) {
     }
     if (profile.unified_descriptor_binding) {
         if (info.uses_rescaling_uniform || info.uses_render_area || uses_tiling ||
+            info.uses_pointer_windows ||
             (profile.support_large_storage_buffers && !info.storage_buffers_descriptors.empty())) {
             DefineRescalingInputPushConstant(info);
         }
@@ -1157,7 +1179,7 @@ void EmitContext::DefineRescalingInput(const Info& info) {
 }
 
 void EmitContext::DefineRescalingInputPushConstant(const Info& info) {
-    boost::container::static_vector<Id, 6> members{};
+    boost::container::static_vector<Id, 7> members{};
     u32 member_index{0};
 
     rescaling_textures_type = TypeArray(U32[1], Const(4u));
@@ -1188,12 +1210,22 @@ void EmitContext::DefineRescalingInputPushConstant(const Info& info) {
     Decorate(tiling_words, spv::Decoration::ArrayStride, 4u);
     members.push_back(tiling_words);
     texture_tiling_member_index = member_index++;
+    if (info.uses_pointer_windows) {
+        members.push_back(U64);
+        pointer_windows_table_member_index = member_index++;
+    }
     const Id push_constant_struct{TypeStruct(std::span(members.data(), members.size()))};
     Decorate(push_constant_struct, spv::Decoration::Block);
     Name(push_constant_struct, "ResolutionInfo");
     MemberDecorate(push_constant_struct, texture_tiling_member_index, spv::Decoration::Offset,
                    TEXTURE_TILING_OFFSET);
     MemberName(push_constant_struct, texture_tiling_member_index, "texture_tiling");
+    if (info.uses_pointer_windows) {
+        MemberDecorate(push_constant_struct, pointer_windows_table_member_index,
+                       spv::Decoration::Offset, POINTER_WINDOWS_TABLE_OFFSET);
+        MemberName(push_constant_struct, pointer_windows_table_member_index,
+                   "pointer_windows_table");
+    }
 
     MemberDecorate(push_constant_struct, rescaling_textures_member_index, spv::Decoration::Offset,
                    static_cast<u32>(offsetof(RescalingLayout, rescaling_textures)));

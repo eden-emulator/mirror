@@ -497,6 +497,9 @@ PipelineCache::PipelineCache(Tegra::MaxwellDeviceMemoryManager& device_memory_,
         .support_attribute_texture_handle = true,
     };
     host_info.ApplyDescriptorLimitPolicy();
+    // Only graphics pipelines bind pointer windows; their metadata uses device addresses.
+    graphics_host_info = host_info;
+    graphics_host_info.support_pointer_windows = profile.support_large_storage_buffers;
 
     if (device.GetMaxVertexInputAttributes() < Maxwell::NumVertexAttributes) {
         LOG_WARNING(Render_Vulkan, "maxVertexInputAttributes is too low: {} < {}",
@@ -842,7 +845,7 @@ std::unique_ptr<GraphicsPipeline> PipelineCache::CreateGraphicsPipeline(
                                        index == static_cast<u32>(Maxwell::ShaderType::Geometry);
         if (key.unique_hashes[index] == 0 && is_emulated_stage) {
             auto topology = MaxwellToOutputTopology(key.state.topology);
-            programs[index] = GenerateGeometryPassthrough(pools.inst, pools.block, host_info,
+            programs[index] = GenerateGeometryPassthrough(pools.inst, pools.block, graphics_host_info,
                                                           *layer_source_program, topology);
             continue;
         }
@@ -856,11 +859,13 @@ std::unique_ptr<GraphicsPipeline> PipelineCache::CreateGraphicsPipeline(
         Shader::Maxwell::Flow::CFG cfg(env, pools.flow_block, cfg_offset, index == 0);
         if (!uses_vertex_a || index != 1) {
             // Normal path
-            programs[index] = TranslateProgram(pools.inst, pools.block, env, cfg, host_info);
+            programs[index] =
+                TranslateProgram(pools.inst, pools.block, env, cfg, graphics_host_info);
         } else {
             // VertexB path when VertexA is present.
             auto& program_va{programs[0]};
-            auto program_vb{TranslateProgram(pools.inst, pools.block, env, cfg, host_info)};
+            auto program_vb{
+                TranslateProgram(pools.inst, pools.block, env, cfg, graphics_host_info)};
             programs[index] = MergeDualVertexPrograms(program_va, program_vb, env);
         }
 

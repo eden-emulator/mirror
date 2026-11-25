@@ -46,6 +46,13 @@ constexpr u32 TEXTURE_TILING_OFFSET = STORAGE_BUFFER_TABLE_OFFSET + sizeof(u64);
 constexpr u32 TEXTURE_TILING_END = TEXTURE_TILING_OFFSET + NUM_TEXTURE_TILING_WORDS * sizeof(u32);
 static_assert(TEXTURE_TILING_END <= 128);
 
+constexpr u32 NUM_POINTER_WINDOW_WORDS = 4;
+// Keep the window metadata out of the atlas tiling push constants.
+constexpr u32 POINTER_WINDOWS_TABLE_OFFSET = TEXTURE_TILING_END;
+constexpr u32 POINTER_WINDOWS_TABLE_END = POINTER_WINDOWS_TABLE_OFFSET + sizeof(u64);
+static_assert(POINTER_WINDOWS_TABLE_OFFSET % alignof(u64) == 0);
+static_assert(POINTER_WINDOWS_TABLE_END <= 128);
+
 [[nodiscard]] std::vector<u32> EmitSPIRV(const Profile& profile, const RuntimeInfo& runtime_info, IR::Program& program, Bindings& bindings);
 [[nodiscard]] inline std::vector<u32> EmitSPIRV(const Profile& profile, IR::Program& program) {
     Bindings binding;

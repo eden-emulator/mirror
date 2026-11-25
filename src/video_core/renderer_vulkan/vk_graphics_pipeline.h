@@ -15,6 +15,7 @@
 #include <vector>
 
 #include "common/thread_worker.h"
+#include "shader_recompiler/backend/spirv/emit_spirv.h"
 #include "shader_recompiler/shader_info.h"
 #include "video_core/engines/maxwell_3d.h"
 #include "video_core/renderer_vulkan/fixed_pipeline_state.h"
@@ -158,8 +159,21 @@ public:
     }
 
 private:
+    /// Guest GPU memory range bound for global memory reached through loaded pointers
+    struct GlobalMemoryWindow {
+        GPUVAddr gpu_addr;
+        u32 size;
+    };
+
     template <typename Spec>
     bool ConfigureImpl(bool is_indexed);
+
+    /// Reads the pointer tables used by this pipeline and groups the pointed-to memory into
+    /// device-contiguous windows
+    std::array<GlobalMemoryWindow, Shader::NUM_POINTER_WINDOWS> ComputePointerWindows();
+
+    /// Returns true when [begin, end) is mapped to contiguous device memory
+    bool IsDeviceContiguous(GPUVAddr begin, GPUVAddr end) const;
 
     bool ConfigureDraw(const RescalingPushConstant& rescaling,
                        const RenderAreaPushConstant& render_are);
@@ -205,6 +219,10 @@ private:
     DescriptorBufferLayout descriptor_buffer_layout;
     std::vector<DescriptorUpdateEntry> last_descriptor_payload;
     bool has_side_effects{false};
+    bool uses_pointer_windows{false};
+    std::array<u32, Shader::Backend::SPIRV::NUM_POINTER_WINDOW_WORDS * Shader::NUM_POINTER_WINDOWS>
+        pointer_window_words{};
+    std::vector<u64> pointer_table_scratch;
     VkDeviceSize last_descriptor_buffer_offset{};
     u32 last_descriptor_buffer_chunk{};
     u64 last_descriptor_buffer_generation{};

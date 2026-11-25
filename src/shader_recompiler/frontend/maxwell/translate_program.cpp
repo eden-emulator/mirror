@@ -90,8 +90,23 @@ void CollectInterpolationInfo(Environment& env, IR::Program& program) {
     }
 }
 
+void AddPointerWindowStorageBuffers(IR::Program& program) {
+    if (!program.info.uses_pointer_windows) {
+        return;
+    }
+    for (u32 window = 0; window < NUM_POINTER_WINDOWS; ++window) {
+        program.info.storage_buffers_descriptors.push_back({
+            .cbuf_index = 0,
+            .cbuf_offset = window,
+            .count = 1,
+            .is_written = program.info.stores_global_memory,
+            .is_pointer_window = true,
+        });
+    }
+}
+
 void AddNVNStorageBuffers(IR::Program& program) {
-    if (!program.info.uses_global_memory) {
+    if (!program.info.uses_global_memory || !program.info.uses_nvn_global_memory) {
         return;
     }
     const u32 driver_cbuf{0};
@@ -410,6 +425,7 @@ IR::Program TranslateProgram(ObjectPool<IR::Inst>& inst_pool, ObjectPool<IR::Blo
 
     CollectInterpolationInfo(env, program);
     AddNVNStorageBuffers(program);
+    AddPointerWindowStorageBuffers(program);
     return program;
 }
 
@@ -443,6 +459,7 @@ IR::Program MergeDualVertexPrograms(IR::Program& vertex_a, IR::Program& vertex_b
         Optimization::VerificationPass(result);
     }
     Optimization::CollectShaderInfoPass(env_vertex_b, result);
+    AddNVNStorageBuffers(result);
     return result;
 }
 

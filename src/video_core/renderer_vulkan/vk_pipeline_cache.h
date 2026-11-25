@@ -166,6 +166,7 @@ private:
 
     Shader::Profile profile;
     Shader::HostTranslateInfo host_info;
+    Shader::HostTranslateInfo graphics_host_info;
 
     std::filesystem::path pipeline_cache_filename;
 

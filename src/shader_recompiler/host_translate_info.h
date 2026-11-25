@@ -21,6 +21,8 @@ struct HostTranslateInfo {
     u32 max_per_stage_descriptor_sampled_images{}; ///< maximum sampled descriptors per stage
     u32 max_per_stage_resources{};                 ///< maximum resources per stage
     u32 max_descriptor_set_samplers{};
+    bool support_pointer_windows{}; ///< True when global memory reached through loaded pointers
+                                    ///< can be emulated with host-managed storage buffer windows
     u32 max_descriptor_set_uniform_buffers{};
     u32 max_descriptor_set_uniform_buffers_dynamic{};
     u32 max_descriptor_set_storage_buffers{};

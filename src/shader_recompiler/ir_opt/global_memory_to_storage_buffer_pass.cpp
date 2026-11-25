@@ -4,7 +4,9 @@
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <algorithm>
 #include <optional>
+#include <queue>
 
 #include <boost/container/flat_set.hpp>
 #include <boost/container/small_vector.hpp>
@@ -54,6 +56,9 @@ struct StorageInfo {
     StorageBufferSet set;
     StorageInstVector to_replace;
     StorageWritesSet writes;
+    /// Storage buffers holding pointers that global memory instructions dereference
+    StorageBufferSet pointer_tables;
+    bool uses_nvn_global_memory{};
 };
 
 /// Returns true when the instruction is a global memory instruction
@@ -332,61 +337,152 @@ std::optional<LowAddrInfo> TrackLowAddress(IR::Inst* inst) {
     };
 }
 
+/// Returns true when the instruction loads a value from global memory
+bool IsGlobalMemoryLoad(const IR::Inst& inst) {
+    switch (inst.GetOpcode()) {
+    case IR::Opcode::LoadGlobalS8:
+    case IR::Opcode::LoadGlobalU8:
+    case IR::Opcode::LoadGlobalS16:
+    case IR::Opcode::LoadGlobalU16:
+    case IR::Opcode::LoadGlobal32:
+    case IR::Opcode::LoadGlobal64:
+    case IR::Opcode::LoadGlobal128:
+        return true;
+    default:
+        return false;
+    }
+}
+
+/// Returns the storage buffer descriptor address read by the instruction, if it is one
+std::optional<StorageBufferAddr> StorageBufferDescriptorRead(const IR::Inst* inst,
+                                                             const Bias* bias) {
+    if (inst->GetOpcode() != IR::Opcode::GetCbufU32 &&
+        inst->GetOpcode() != IR::Opcode::GetCbufU32x2) {
+        return std::nullopt;
+    }
+    const IR::Value index{inst->Arg(0)};
+    const IR::Value offset{inst->Arg(1)};
+    if (!index.IsImmediate()) {
+        // Definitely not a storage buffer if it's read from a
+        // non-immediate index
+        return std::nullopt;
+    }
+    if (!offset.IsImmediate()) {
+        // TODO: Support SSBO arrays
+        return std::nullopt;
+    }
+    const StorageBufferAddr storage_buffer{
+        .index = index.U32(),
+        .offset = offset.U32(),
+    };
+    const u32 alignment{bias ? bias->alignment : 8U};
+    if (!Common::IsAligned(storage_buffer.offset, alignment)) {
+        // The SSBO pointer has to be aligned
+        return std::nullopt;
+    }
+    if (bias && !MeetsBias(storage_buffer, *bias)) {
+        // We have to blacklist some addresses in case we wrongly
+        // point to them
+        return std::nullopt;
+    }
+    return storage_buffer;
+}
+
 /// Tries to track the storage buffer address used by a global memory instruction
 std::optional<StorageBufferAddr> Track(const IR::Value& value, const Bias* bias) {
-    const auto pred{[bias](const IR::Inst* inst) -> std::optional<StorageBufferAddr> {
-        if (inst->GetOpcode() != IR::Opcode::GetCbufU32 &&
-            inst->GetOpcode() != IR::Opcode::GetCbufU32x2) {
-            return std::nullopt;
+    return BreadthFirstSearch(value, [bias](const IR::Inst* inst) {
+        return StorageBufferDescriptorRead(inst, bias);
+    });
+}
+
+/// Like Track, but does not look through values loaded from global memory. An address that is
+/// only related to a storage buffer descriptor through a load was read from memory (a pointer),
+/// so it does not point into that storage buffer.
+std::optional<StorageBufferAddr> TrackWithoutLoads(const IR::Value& value, const Bias* bias) {
+    if (value.IsImmediate()) {
+        return std::nullopt;
+    }
+    boost::container::small_vector<const IR::Inst*, 8> visited;
+    std::queue<const IR::Inst*> queue;
+    queue.push(value.InstRecursive());
+    while (!queue.empty()) {
+        const IR::Inst* const inst{queue.front()};
+        queue.pop();
+        if (const std::optional result{StorageBufferDescriptorRead(inst, bias)}) {
+            return result;
         }
-        const IR::Value index{inst->Arg(0)};
-        const IR::Value offset{inst->Arg(1)};
-        if (!index.IsImmediate()) {
-            // Definitely not a storage buffer if it's read from a
-            // non-immediate index
-            return std::nullopt;
+        if (IsGlobalMemoryLoad(*inst)) {
+            continue;
         }
-        if (!offset.IsImmediate()) {
-            // TODO: Support SSBO arrays
-            return std::nullopt;
+        for (size_t arg = inst->NumArgs(); arg--;) {
+            const IR::Value arg_value{inst->Arg(arg)};
+            if (arg_value.IsImmediate()) {
+                continue;
+            }
+            const IR::Inst* const arg_inst{arg_value.InstRecursive()};
+            if (std::ranges::find(visited, arg_inst) == visited.end()) {
+                visited.push_back(arg_inst);
+                queue.push(arg_inst);
+            }
         }
-        const StorageBufferAddr storage_buffer{
-            .index = index.U32(),
-            .offset = offset.U32(),
-        };
-        const u32 alignment{bias ? bias->alignment : 8U};
-        if (!Common::IsAligned(storage_buffer.offset, alignment)) {
-            // The SSBO pointer has to be aligned
+    }
+    return std::nullopt;
+}
+
+// NVN puts storage buffers in a specific range, we have to bias towards these addresses to
+// avoid getting false positives
+constexpr Bias nvn_bias{
+    .index = 0,
+    .offset_begin = 0x100,
+    .offset_end = 0x700,
+    .alignment = 16,
+};
+
+/// Returns the storage buffer holding the pointer that an address was loaded from, when the
+/// address is a pointer read from memory rather than an offset into a storage buffer
+std::optional<StorageBufferAddr> TrackPointerTable(const IR::U32& low_addr) {
+    const std::optional pointer_load{
+        IR::BreadthFirstSearch(low_addr, [](const IR::Inst* inst) -> std::optional<IR::Inst*> {
+            if (IsGlobalMemoryLoad(*inst)) {
+                return const_cast<IR::Inst*>(inst);
+            }
             return std::nullopt;
-        }
-        if (bias && !MeetsBias(storage_buffer, *bias)) {
-            // We have to blacklist some addresses in case we wrongly
-            // point to them
-            return std::nullopt;
-        }
-        return storage_buffer;
-    }};
-    return BreadthFirstSearch(value, pred);
+        })};
+    if (!pointer_load) {
+        return std::nullopt;
+    }
+    const std::optional<LowAddrInfo> table_addr{TrackLowAddress(*pointer_load)};
+    if (!table_addr) {
+        return std::nullopt;
+    }
+    if (const std::optional table{TrackWithoutLoads(table_addr->value, &nvn_bias)}) {
+        return table;
+    }
+    return TrackWithoutLoads(table_addr->value, nullptr);
 }
 
 /// Collects the storage buffer used by a global memory instruction and the instruction itself
-void CollectStorageBuffers(IR::Block& block, IR::Inst& inst, StorageInfo& info) {
-    // NVN puts storage buffers in a specific range, we have to bias towards these addresses to
-    // avoid getting false positives
-    static constexpr Bias nvn_bias{
-        .index = 0,
-        .offset_begin = 0x100,
-        .offset_end = 0x700,
-        .alignment = 16,
-    };
+void CollectStorageBuffers(IR::Block& block, IR::Inst& inst, StorageInfo& info,
+                           const HostTranslateInfo& host_info) {
     // Track the low address of the instruction
     const std::optional<LowAddrInfo> low_addr_info{TrackLowAddress(&inst)};
     if (!low_addr_info) {
         // Failed to track the low address, use NVN fallbacks
+        info.uses_nvn_global_memory = true;
         return;
     }
-    // First try to find storage buffers in the NVN address
     const IR::U32 low_addr{low_addr_info->value};
+    if (host_info.support_pointer_windows &&
+        !TrackWithoutLoads(low_addr, &nvn_bias) && !TrackWithoutLoads(low_addr, nullptr)) {
+        // The address is not an offset into a storage buffer described in a constant buffer.
+        // If it is a pointer loaded from a storage buffer, keep the instruction as a global
+        // memory access; the host binds windows covering the pointed-to memory.
+        if (const std::optional table{TrackPointerTable(low_addr)}) {
+            info.pointer_tables.insert(*table);
+            return;
+        }
+    }
+    // First try to find storage buffers in the NVN address
     std::optional<StorageBufferAddr> storage_buffer{Track(low_addr, &nvn_bias)};
     if (!storage_buffer) {
         // If it fails, track without a bias
@@ -394,6 +490,7 @@ void CollectStorageBuffers(IR::Block& block, IR::Inst& inst, StorageInfo& info) 
         if (!storage_buffer) {
             // If that also fails, use NVN fallbacks
             LOG_WARNING(Shader, "Storage buffer failed to track, using global memory fallbacks");
+            info.uses_nvn_global_memory = true;
             return;
         }
         LOG_WARNING(Shader, "Storage buffer tracked without bias, index {} offset {}",
@@ -530,9 +627,24 @@ void GlobalMemoryToStorageBufferPass(IR::Program& program, const HostTranslateIn
             if (!IsGlobalMemory(inst)) {
                 continue;
             }
-            CollectStorageBuffers(*block, inst, info);
+            CollectStorageBuffers(*block, inst, info, host_info);
         }
     }
+    for (const StorageBufferAddr& table : info.pointer_tables) {
+        if (program.info.pointer_table_descriptors.size() ==
+            program.info.pointer_table_descriptors.capacity()) {
+            LOG_WARNING(Shader, "Too many pointer tables, ignoring cbuf{}+{:#x}", table.index,
+                        table.offset);
+            info.uses_nvn_global_memory = true;
+            continue;
+        }
+        program.info.pointer_table_descriptors.push_back({
+            .cbuf_index = table.index,
+            .cbuf_offset = table.offset,
+        });
+        program.info.uses_pointer_windows = true;
+    }
+    program.info.uses_nvn_global_memory = info.uses_nvn_global_memory;
     for (const StorageBufferAddr& storage_buffer : info.set) {
         program.info.storage_buffers_descriptors.push_back({
             .cbuf_index = storage_buffer.index,
@@ -558,7 +670,8 @@ void JoinStorageInfo(Info& base, Info& source) {
     for (auto& desc : source.storage_buffers_descriptors) {
         auto it{std::ranges::find_if(descriptors, [&desc](const auto& existing) {
             return desc.cbuf_index == existing.cbuf_index &&
-                   desc.cbuf_offset == existing.cbuf_offset && desc.count == existing.count;
+                   desc.cbuf_offset == existing.cbuf_offset && desc.count == existing.count &&
+                   desc.is_pointer_window == existing.is_pointer_window;
         })};
         if (it != descriptors.end()) {
             it->is_written |= desc.is_written;
@@ -566,6 +679,16 @@ void JoinStorageInfo(Info& base, Info& source) {
         }
         descriptors.push_back(desc);
     }
+    for (const auto& table : source.pointer_table_descriptors) {
+        if (std::ranges::find(base.pointer_table_descriptors, table) !=
+                base.pointer_table_descriptors.end() ||
+            base.pointer_table_descriptors.size() == base.pointer_table_descriptors.capacity()) {
+            continue;
+        }
+        base.pointer_table_descriptors.push_back(table);
+    }
+    base.uses_pointer_windows |= source.uses_pointer_windows;
+    base.uses_nvn_global_memory |= source.uses_nvn_global_memory;
 }
 
 } // namespace Shader::Optimization

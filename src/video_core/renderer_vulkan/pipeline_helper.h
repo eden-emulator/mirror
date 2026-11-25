@@ -247,7 +247,7 @@ public:
             .stageFlags = static_cast<VkShaderStageFlags>(
                 is_compute ? VK_SHADER_STAGE_COMPUTE_BIT : VK_SHADER_STAGE_ALL_GRAPHICS),
             .offset = 0,
-            .size = Shader::Backend::SPIRV::TEXTURE_TILING_END,
+            .size = Shader::Backend::SPIRV::POINTER_WINDOWS_TABLE_END,
         };
         return device->GetLogical().CreatePipelineLayout({
             .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
