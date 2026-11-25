@@ -215,6 +215,18 @@ constexpr VkBorderColor ConvertBorderColor(const std::array<float, 4>& color) {
     return image_ci;
 }
 
+u32 GetLinearTileHeight(const Device& device, const ImageInfo& info) {
+    const u32 limit = device.GetMaxImageDimension2D();
+    if (info.type != ImageType::Linear || info.format != PixelFormat::R8_UNORM ||
+        info.size.height <= limit || info.size.width > limit ||
+        !std::has_single_bit(static_cast<u32>(info.size.height)) || info.resources.levels != 1 ||
+        info.resources.layers != 1 || info.num_samples != 1) {
+        return 0;
+    }
+    // Two extra rows keep bilinear filtering continuous between array layers.
+    return std::bit_floor(limit - 2);
+}
+
 [[nodiscard]] vk::Image MakeImage(const Device& device, const MemoryAllocator& allocator,
                                   const ImageInfo& info, std::span<const VkFormat> view_formats,
                                   std::optional<VkFormat> format_override = {}) {
@@ -222,6 +234,10 @@ constexpr VkBorderColor ConvertBorderColor(const std::array<float, 4>& color) {
         return vk::Image{};
     }
     VkImageCreateInfo image_ci = MakeImageCreateInfo(device, info, format_override);
+    if (const u32 tile_height = GetLinearTileHeight(device, info)) {
+        image_ci.extent.height = tile_height + 2;
+        image_ci.arrayLayers = info.size.height / tile_height;
+    }
     const VkImageFormatListCreateInfo image_format_list = {
         .sType = VK_STRUCTURE_TYPE_IMAGE_FORMAT_LIST_CREATE_INFO,
         .pNext = nullptr,
@@ -615,6 +631,50 @@ struct RangedBarrierRange {
         };
     }
 };
+
+boost::container::small_vector<VkBufferImageCopy, 16> TileLinearCopies(
+    std::span<const VkBufferImageCopy> copies, u32 height, u32 tile_height, bool upload) {
+    boost::container::small_vector<VkBufferImageCopy, 16> result;
+    const u32 layers = height / tile_height;
+    for (const auto& copy : copies) {
+        ASSERT(copy.imageSubresource.baseArrayLayer == 0 && copy.imageSubresource.layerCount == 1);
+        const u32 row_bytes = copy.bufferRowLength ? copy.bufferRowLength : copy.imageExtent.width;
+        const auto add = [&](u32 layer, u32 guest_row, u32 host_row, u32 rows) {
+            const s32 begin = (std::max)(copy.imageOffset.y, static_cast<s32>(guest_row));
+            const s32 end = (std::min)(copy.imageOffset.y + static_cast<s32>(copy.imageExtent.height),
+                                      static_cast<s32>(guest_row + rows));
+            if (begin >= end) {
+                return;
+            }
+            auto region = copy;
+            region.bufferOffset += static_cast<VkDeviceSize>(begin - copy.imageOffset.y) * row_bytes;
+            region.bufferImageHeight = 0;
+            region.imageSubresource.baseArrayLayer = layer;
+            region.imageOffset.y = host_row + begin - guest_row;
+            region.imageExtent.height = end - begin;
+            result.push_back(region);
+        };
+        for (u32 layer = 0; layer < layers; ++layer) {
+            const u32 padding = layer == 0 ? 0 : layer == layers - 1 ? 2 : 1;
+            add(layer, layer * tile_height, padding, tile_height);
+            if (!upload) {
+                continue;
+            }
+            if (layer == 0) {
+                add(layer, tile_height, tile_height, 1);
+                add(layer, height - 1, tile_height + 1, 1);
+            } else if (layer == layers - 1) {
+                add(layer, 0, 0, 1);
+                add(layer, layer * tile_height - 1, 1, 1);
+            } else {
+                add(layer, layer * tile_height - 1, 0, 1);
+                add(layer, (layer + 1) * tile_height, tile_height + 1, 1);
+            }
+        }
+    }
+    return result;
+}
+
 void CopyBufferToImage(vk::CommandBuffer cmdbuf, VkBuffer src_buffer, VkImage image,
                        VkImageAspectFlags aspect_mask, bool is_initialized,
                        std::span<const VkBufferImageCopy> copies) {
@@ -1935,6 +1995,7 @@ Image::Image(TextureCacheRuntime& runtime_, const ImageInfo& info_, GPUVAddr gpu
              VAddr cpu_addr_)
     : VideoCommon::ImageBase(info_, gpu_addr_, cpu_addr_), scheduler{&runtime_.scheduler},
       runtime{&runtime_},
+      linear_tile_height{GetLinearTileHeight(runtime_.device, info)},
       original_image(MakeImage(runtime_.device, runtime_.memory_allocator, info,
                                runtime->ViewFormats(info.format))),
       aspect_mask(ImageAspectMask(info.format)) {
@@ -2112,6 +2173,10 @@ void Image::UploadMemory(VkBuffer buffer, VkDeviceSize offset,
 
     scheduler->RequestOutsideRenderPassOperationContext();
     auto vk_copies = TransformBufferImageCopies(copies, offset, aspect_mask);
+    if (linear_tile_height) {
+        vk_copies = TileLinearCopies(std::span(vk_copies.data(), vk_copies.size()), info.size.height,
+                                    linear_tile_height, true);
+    }
     const VkBuffer src_buffer = buffer;
     const VkImage vk_image = *original_image;
     const VkImageAspectFlags vk_aspect_mask = aspect_mask;
@@ -2327,6 +2392,11 @@ void Image::DownloadMemory(std::span<VkBuffer> buffers_span, std::span<size_t> o
             buffers_vector.emplace_back(buffers_span[index]);
             vk_copies.emplace_back(
                 TransformBufferImageCopies(copies, offsets_span[index], aspect_mask));
+            if (linear_tile_height) {
+                vk_copies.back() = TileLinearCopies(
+                    std::span(vk_copies.back().data(), vk_copies.back().size()), info.size.height,
+                    linear_tile_height, false);
+            }
         }
         scheduler->RequestOutsideRenderPassOperationContext();
         scheduler->Record([buffers = std::move(buffers_vector), image = *original_image,
@@ -2580,6 +2650,7 @@ ImageView::ImageView(TextureCacheRuntime& runtime, const VideoCommon::ImageViewI
       device{&runtime.device}, image_handle{image.Handle()},
       samples(ConvertSampleCount(image.info.num_samples)) {
     using Shader::TextureType;
+    tiled_linear = image.LinearTileHeight() != 0;
 
     const VkImageAspectFlags aspect_mask = ImageViewAspectMask(info);
     std::array<SwizzleSource, 4> swizzle{
@@ -2654,6 +2725,8 @@ ImageView::ImageView(TextureCacheRuntime& runtime, const VideoCommon::ImageViewI
         ci.viewType = ImageViewType(tex_type);
         if (num_layers) {
             ci.subresourceRange.layerCount = *num_layers;
+        } else if (tiled_linear) {
+            ci.subresourceRange.layerCount = image.info.size.height / image.LinearTileHeight();
         }
         vk::ImageView handle = device->GetLogical().CreateImageView(ci);
         if (device->HasDebuggingToolAttached()) {

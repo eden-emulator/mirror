@@ -396,6 +396,78 @@ Id BitTest(EmitContext& ctx, Id mask, Id bit) {
     return ctx.OpINotEqual(ctx.U1, bit_value, ctx.u32_zero_value);
 }
 
+bool CanTileLinear(EmitContext& ctx, const IR::TextureInstInfo& info) {
+    return ctx.profile.unified_descriptor_binding && Sirit::ValidId(ctx.rescaling_push_constants) &&
+           info.type == TextureType::ColorArray2D && !IsTextureInteger(ctx, info) &&
+           !IsTextureMsaa(ctx, info);
+}
+
+Id TextureTilingFlags(EmitContext& ctx, const IR::TextureInstInfo& info, const IR::Value& index) {
+    const auto& def = ctx.textures.at(info.descriptor_index);
+    const Id array_index = def.count > 1 ? ctx.Def(index) : ctx.u32_zero_value;
+    const Id element = ctx.OpIAdd(ctx.U32[1], ctx.Const(def.tiling_index), array_index);
+    const Id word = ctx.OpUMin(ctx.U32[1], ctx.OpShiftRightLogical(ctx.U32[1], element, ctx.Const(3u)),
+                              ctx.Const(NUM_TEXTURE_TILING_WORDS - 1));
+    const Id bit = ctx.OpIMul(ctx.U32[1], ctx.OpBitwiseAnd(ctx.U32[1], element, ctx.Const(7u)),
+                             ctx.Const(4u));
+    const Id pointer_type = ctx.TypePointer(spv::StorageClass::PushConstant, ctx.U32[1]);
+    const Id pointer = ctx.OpAccessChain(pointer_type, ctx.rescaling_push_constants,
+                                        ctx.Const(ctx.texture_tiling_member_index), word);
+    const Id value = ctx.OpLoad(ctx.U32[1], pointer);
+    const Id flags = ctx.OpBitwiseAnd(ctx.U32[1],
+        ctx.OpShiftRightLogical(ctx.U32[1], value, bit), ctx.Const(15u));
+    return ctx.OpSelect(ctx.U32[1],
+                        ctx.OpULessThan(ctx.U1, element, ctx.Const(NUM_TEXTURE_SCALING_WORDS * 32)),
+                        flags, ctx.u32_zero_value);
+}
+
+// Return the vertical gradient scale while converting logical atlas coordinates to a layer.
+Id TileLinearCoordinates(EmitContext& ctx, const IR::TextureInstInfo& info,
+                         const IR::Value& index, Id& coords) {
+    const Id flags = TextureTilingFlags(ctx, info, index);
+    const Id tiled = BitTest(ctx, flags, ctx.u32_zero_value);
+    const Id mode = ctx.OpShiftRightLogical(ctx.U32[1], flags, ctx.Const(1u));
+    const Id size = ctx.OpImageQuerySizeLod(ctx.U32[3], TextureImage(ctx, info, index),
+                                          ctx.u32_zero_value);
+    const Id height = ctx.OpConvertUToF(ctx.F32[1], ctx.OpCompositeExtract(ctx.U32[1], size, 1));
+    const Id layers = ctx.OpConvertUToF(ctx.F32[1], ctx.OpCompositeExtract(ctx.U32[1], size, 2));
+    const Id tile_height = ctx.OpFMax(ctx.F32[1],
+        ctx.OpFSub(ctx.F32[1], height, ctx.Const(2.0f)), ctx.Const(1.0f));
+    const Id logical_height = ctx.OpFMul(ctx.F32[1], tile_height, layers);
+    const Id v = ctx.OpCompositeExtract(ctx.F32[1], coords, 1);
+    const Id repeat = ctx.OpFract(ctx.F32[1], v);
+    const Id mirror_phase = ctx.OpFMul(ctx.F32[1],
+        ctx.OpFract(ctx.F32[1], ctx.OpFMul(ctx.F32[1], v, ctx.Const(0.5f))), ctx.Const(2.0f));
+    const Id mirror = ctx.OpFSub(ctx.F32[1], ctx.Const(1.0f),
+        ctx.OpFAbs(ctx.F32[1], ctx.OpFSub(ctx.F32[1], mirror_phase, ctx.Const(1.0f))));
+    Id wrapped = ctx.OpSelect(ctx.F32[1], ctx.OpIEqual(ctx.U1, mode, ctx.Const(0u)), repeat, v);
+    wrapped = ctx.OpSelect(ctx.F32[1], ctx.OpIEqual(ctx.U1, mode, ctx.Const(1u)), mirror, wrapped);
+    wrapped = ctx.OpSelect(ctx.F32[1], ctx.OpIEqual(ctx.U1, mode, ctx.Const(2u)),
+        ctx.OpFClamp(ctx.F32[1], v, ctx.f32_zero_value, ctx.Const(1.0f)), wrapped);
+    wrapped = ctx.OpSelect(ctx.F32[1], ctx.OpIEqual(ctx.U1, mode, ctx.Const(4u)),
+        ctx.OpFClamp(ctx.F32[1], ctx.OpFAbs(ctx.F32[1], v), ctx.f32_zero_value, ctx.Const(1.0f)), wrapped);
+    const Id last = ctx.OpFSub(ctx.F32[1], layers, ctx.Const(1.0f));
+    const Id layer = ctx.OpFClamp(ctx.F32[1],
+        ctx.OpFloor(ctx.F32[1], ctx.OpFMul(ctx.F32[1], wrapped, layers)), ctx.f32_zero_value, last);
+    const Id padding = ctx.OpSelect(ctx.F32[1],
+        ctx.OpFOrdEqual(ctx.U1, layer, ctx.f32_zero_value), ctx.f32_zero_value,
+        ctx.OpSelect(ctx.F32[1], ctx.OpFOrdEqual(ctx.U1, layer, last),
+                     ctx.Const(2.0f), ctx.Const(1.0f)));
+    Id local_v = ctx.OpFDiv(ctx.F32[1],
+        ctx.OpFAdd(ctx.F32[1], ctx.OpFSub(ctx.F32[1],
+            ctx.OpFMul(ctx.F32[1], wrapped, logical_height),
+            ctx.OpFMul(ctx.F32[1], layer, tile_height)), padding), height);
+    // Keep the reflected half in the sampler's mirrored domain, including nearest-filter ties.
+    const Id reflected = ctx.OpLogicalAnd(ctx.U1, ctx.OpIEqual(ctx.U1, mode, ctx.Const(1u)),
+        ctx.OpFOrdGreaterThanEqual(ctx.U1, mirror_phase, ctx.Const(1.0f)));
+    local_v = ctx.OpSelect(ctx.F32[1], reflected, ctx.OpFNegate(ctx.F32[1], local_v), local_v);
+    coords = ctx.OpCompositeConstruct(ctx.F32[3], ctx.OpCompositeExtract(ctx.F32[1], coords, 0),
+        ctx.OpSelect(ctx.F32[1], tiled, local_v, v),
+        ctx.OpSelect(ctx.F32[1], tiled, layer, ctx.OpCompositeExtract(ctx.F32[1], coords, 2)));
+    return ctx.OpSelect(ctx.F32[1], tiled,
+                        ctx.OpFDiv(ctx.F32[1], logical_height, height), ctx.Const(1.0f));
+}
+
 Id ImageGatherSubpixelOffset(EmitContext& ctx, const IR::TextureInstInfo& info, Id texture,
                              Id coords) {
     // Apply a subpixel offset of 1/512 the texel size of the texture to ensure same rounding on
@@ -560,6 +632,33 @@ Id EmitImageSampleImplicitLod(EmitContext& ctx, IR::Inst* inst, const IR::Value&
     const bool is_integer{IsTextureInteger(ctx, info)};
     const Id result_type{is_integer ? ctx.U32[4] : ctx.F32[4]};
     Id color;
+    if (CanTileLinear(ctx, info)) {
+        const Id original_coords = coords;
+        const Id vertical_scale = TileLinearCoordinates(ctx, info, index, coords);
+        if (ctx.stage == Stage::Fragment) {
+            // Derive before selecting a layer, so crossing a tile does not change the LOD.
+            Id dx = ctx.OpDPdx(ctx.F32[3], original_coords);
+            Id dy = ctx.OpDPdy(ctx.F32[3], original_coords);
+            if (info.has_bias) {
+                const Id bias = info.has_lod_clamp
+                    ? ctx.OpCompositeExtract(ctx.F32[1], bias_lc, 0) : bias_lc;
+                const Id factor = ctx.OpExp2(ctx.F32[1], bias);
+                dx = ctx.OpVectorTimesScalar(ctx.F32[3], dx, factor);
+                dy = ctx.OpVectorTimesScalar(ctx.F32[3], dy, factor);
+            }
+            const Id gradients = ctx.OpCompositeConstruct(ctx.F32[4],
+                ctx.OpCompositeExtract(ctx.F32[1], dx, 0),
+                ctx.OpCompositeExtract(ctx.F32[1], dy, 0),
+                ctx.OpFMul(ctx.F32[1], ctx.OpCompositeExtract(ctx.F32[1], dx, 1), vertical_scale),
+                ctx.OpFMul(ctx.F32[1], ctx.OpCompositeExtract(ctx.F32[1], dy, 1), vertical_scale));
+            const Id clamp = info.has_bias && info.has_lod_clamp
+                ? ctx.OpCompositeExtract(ctx.F32[1], bias_lc, 1) : bias_lc;
+            const ImageOperands operands(ctx, info.has_lod_clamp != 0, gradients, 2, offset, clamp);
+            return Emit(&EmitContext::OpImageSparseSampleExplicitLod,
+                        &EmitContext::OpImageSampleExplicitLod, ctx, inst, result_type,
+                        Texture(ctx, info, index), coords, operands.Mask(), operands.Span());
+        }
+    }
     if (ctx.stage == Stage::Fragment) {
         const ImageOperands operands(ctx, info.has_bias != 0, false, info.has_lod_clamp != 0,
                                      bias_lc, offset);
@@ -585,6 +684,9 @@ Id EmitImageSampleExplicitLod(EmitContext& ctx, IR::Inst* inst, const IR::Value&
     const bool is_integer{IsTextureInteger(ctx, info)};
     const Id result_type{is_integer ? ctx.U32[4] : ctx.F32[4]};
     const ImageOperands operands(ctx, false, true, false, lod, offset);
+    if (CanTileLinear(ctx, info)) {
+        TileLinearCoordinates(ctx, info, index, coords);
+    }
 
     Id result = Emit(&EmitContext::OpImageSparseSampleExplicitLod,
                      &EmitContext::OpImageSampleExplicitLod, ctx, inst, result_type,
@@ -659,6 +761,23 @@ Id EmitImageFetch(EmitContext& ctx, IR::Inst* inst, const IR::Value& index, Id c
     const bool is_integer{IsTextureInteger(ctx, info)};
     const Id result_type{is_integer ? ctx.U32[4] : ctx.F32[4]};
     AddOffsetToCoordinates(ctx, info, coords, offset);
+    if (CanTileLinear(ctx, info)) {
+        const Id tiled = BitTest(ctx, TextureTilingFlags(ctx, info, index), ctx.u32_zero_value);
+        const Id size = ctx.OpImageQuerySizeLod(ctx.U32[3], TextureImage(ctx, info, index),
+                                              ctx.u32_zero_value);
+        const Id height = ctx.OpISub(ctx.U32[1], ctx.OpUMax(ctx.U32[1],
+            ctx.OpCompositeExtract(ctx.U32[1], size, 1), ctx.Const(3u)), ctx.Const(2u));
+        const Id y = ctx.OpCompositeExtract(ctx.U32[1], coords, 1);
+        const Id layer = ctx.OpUDiv(ctx.U32[1], y, height);
+        const Id last = ctx.OpISub(ctx.U32[1], ctx.OpCompositeExtract(ctx.U32[1], size, 2), ctx.Const(1u));
+        const Id padding = ctx.OpSelect(ctx.U32[1], ctx.OpIEqual(ctx.U1, layer, ctx.u32_zero_value),
+            ctx.u32_zero_value, ctx.OpSelect(ctx.U32[1], ctx.OpIEqual(ctx.U1, layer, last),
+                                           ctx.Const(2u), ctx.Const(1u)));
+        const Id local_y = ctx.OpIAdd(ctx.U32[1], ctx.OpUMod(ctx.U32[1], y, height), padding);
+        coords = ctx.OpCompositeConstruct(ctx.U32[3], ctx.OpCompositeExtract(ctx.U32[1], coords, 0),
+            ctx.OpSelect(ctx.U32[1], tiled, local_y, y),
+            ctx.OpSelect(ctx.U32[1], tiled, layer, ctx.OpCompositeExtract(ctx.U32[1], coords, 2)));
+    }
     if (info.type == TextureType::Buffer) {
         lod = Id{};
     }
@@ -695,6 +814,19 @@ Id EmitImageQueryDimensions(EmitContext& ctx, IR::Inst* inst, const IR::Value& i
     case TextureType::Color2DRect:
         return ctx.OpCompositeConstruct(ctx.U32[4], query(ctx.U32[2]), zero, mips());
     case TextureType::ColorArray2D:
+        if (CanTileLinear(ctx, info)) {
+            const Id tiled = BitTest(ctx, TextureTilingFlags(ctx, info, index), ctx.u32_zero_value);
+            const Id size = query(ctx.U32[3]);
+            const Id height = ctx.OpCompositeExtract(ctx.U32[1], size, 1);
+            const Id layers = ctx.OpCompositeExtract(ctx.U32[1], size, 2);
+            const Id logical_height = ctx.OpIMul(ctx.U32[1],
+                ctx.OpISub(ctx.U32[1], height, ctx.Const(2u)), layers);
+            return ctx.OpCompositeConstruct(ctx.U32[4],
+                ctx.OpCompositeExtract(ctx.U32[1], size, 0),
+                ctx.OpSelect(ctx.U32[1], tiled, logical_height, height),
+                ctx.OpSelect(ctx.U32[1], tiled, ctx.Const(1u), layers), mips());
+        }
+        [[fallthrough]];
     case TextureType::Color3D:
     case TextureType::ColorArrayCube:
         return ctx.OpCompositeConstruct(ctx.U32[4], query(ctx.U32[3]), mips());
@@ -717,6 +849,14 @@ Id EmitImageGradient(EmitContext& ctx, IR::Inst* inst, const IR::Value& index, I
     const auto info{inst->Flags<IR::TextureInstInfo>()};
     const bool is_integer{IsTextureInteger(ctx, info)};
     const Id result_type{is_integer ? ctx.U32[4] : ctx.F32[4]};
+    if (CanTileLinear(ctx, info)) {
+        const Id vertical_scale = TileLinearCoordinates(ctx, info, index, coords);
+        derivatives = ctx.OpCompositeConstruct(ctx.F32[4],
+            ctx.OpCompositeExtract(ctx.F32[1], derivatives, 0),
+            ctx.OpCompositeExtract(ctx.F32[1], derivatives, 1),
+            ctx.OpFMul(ctx.F32[1], ctx.OpCompositeExtract(ctx.F32[1], derivatives, 2), vertical_scale),
+            ctx.OpFMul(ctx.F32[1], ctx.OpCompositeExtract(ctx.F32[1], derivatives, 3), vertical_scale));
+    }
     const auto operands = info.num_derivatives == 3
                               ? ImageOperands(ctx, info.has_lod_clamp != 0, derivatives,
                                               ctx.Def(offset), {}, lod_clamp)

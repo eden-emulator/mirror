@@ -310,7 +310,8 @@ bool ComputePipeline::Configure(Tegra::Engines::KeplerCompute& kepler_compute,
     const VkDeviceAddress storage_buffer_table{buffer_cache.runtime.UploadStorageBufferAddresses()};
     scheduler.Record([this, descriptor_data, is_rescaling, descriptor_buffer_offset,
                       storage_buffer_table, descriptor_buffer_chunk, bind_descriptor_buffer,
-                      rescaling_data = rescaling.Data()](vk::CommandBuffer cmdbuf) {
+                      rescaling_data = rescaling.Data(),
+                      tiling_data = rescaling.TilingData()](vk::CommandBuffer cmdbuf) {
         if (bind_descriptor_buffer) {
             const VkDescriptorBufferBindingInfoEXT binding_info{
                 descriptor_buffer_ring.BindingInfo(descriptor_buffer_chunk)};
@@ -330,6 +331,9 @@ bool ComputePipeline::Configure(Tegra::Engines::KeplerCompute& kepler_compute,
             cmdbuf.PushConstants(*pipeline_layout, VK_SHADER_STAGE_COMPUTE_BIT,
                                  RESCALING_LAYOUT_WORDS_OFFSET, sizeof(rescaling_data),
                                  rescaling_data.data());
+            cmdbuf.PushConstants(*pipeline_layout, VK_SHADER_STAGE_COMPUTE_BIT,
+                                 Shader::Backend::SPIRV::TEXTURE_TILING_OFFSET, sizeof(tiling_data),
+                                 tiling_data.data());
         }
         if (uses_descriptor_buffer) {
             const u32 buffer_index{};

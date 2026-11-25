@@ -392,6 +392,10 @@ public:
 
     bool IsRescaled() const noexcept;
 
+    u32 LinearTileHeight() const noexcept {
+        return linear_tile_height;
+    }
+
     bool ScaleUp(bool ignore = false);
 
     bool ScaleDown(bool ignore = false);
@@ -408,6 +412,7 @@ private:
     Scheduler* scheduler{};
     TextureCacheRuntime* runtime{};
 
+    u32 linear_tile_height{};
     vk::Image original_image;
     vk::Image scaled_image;
 
@@ -461,6 +466,10 @@ public:
 
     [[nodiscard]] VkImageView Handle(Shader::TextureType texture_type) const noexcept {
         return *image_views[static_cast<size_t>(texture_type)];
+    }
+
+    bool IsTiledLinear() const noexcept {
+        return tiled_linear;
     }
 
     [[nodiscard]] VkImage ImageHandle() const noexcept {
@@ -533,6 +542,7 @@ private:
     bool requires_border_color_format = false;
     bool supports_minmax_filter = false;
     bool has_identity_swizzle = true;
+    bool tiled_linear = false;
 };
 
 class ImageAlloc : public VideoCommon::ImageAllocBase {};
@@ -566,6 +576,10 @@ public:
     }
 
     [[nodiscard]] VkSampler HandleFor(const ImageView& image_view, bool is_depth);
+
+    VkSamplerAddressMode WrapV() const noexcept {
+        return base_ci.addressModeV;
+    }
 
 private:
     struct VariantKey {

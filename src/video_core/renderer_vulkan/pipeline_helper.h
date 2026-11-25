@@ -247,7 +247,7 @@ public:
             .stageFlags = static_cast<VkShaderStageFlags>(
                 is_compute ? VK_SHADER_STAGE_COMPUTE_BIT : VK_SHADER_STAGE_ALL_GRAPHICS),
             .offset = 0,
-            .size = Shader::Backend::SPIRV::STORAGE_BUFFER_TABLE_OFFSET + sizeof(VkDeviceAddress),
+            .size = Shader::Backend::SPIRV::TEXTURE_TILING_END,
         };
         return device->GetLogical().CreatePipelineLayout({
             .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
@@ -332,12 +332,29 @@ public:
         return words;
     }
 
+    void PushTiledTexture(bool tiled, VkSamplerAddressMode wrap_v) {
+        using namespace Shader::Backend::SPIRV;
+        const u32 index = tiling_index++;
+        if (!tiled) {
+            return;
+        }
+        ASSERT(index < NUM_TEXTURE_SCALING_WORDS * 32);
+        const u32 flags = 1u | (static_cast<u32>(wrap_v) << 1);
+        tiling_words[index / 8] |= flags << ((index % 8) * 4);
+    }
+
+    const auto& TilingData() const noexcept {
+        return tiling_words;
+    }
+
 private:
     std::array<u32, NUM_TEXTURE_AND_IMAGE_SCALING_WORDS> words{};
     u32* texture_ptr{words.data()};
     u32* image_ptr{words.data() + Shader::Backend::SPIRV::NUM_TEXTURE_SCALING_WORDS};
     u32 texture_bit{1u};
     u32 image_bit{1u};
+    std::array<u32, Shader::Backend::SPIRV::NUM_TEXTURE_TILING_WORDS> tiling_words{};
+    u32 tiling_index{};
 };
 
 class RenderAreaPushConstant {
@@ -367,6 +384,8 @@ inline void PushImageDescriptors(TextureCache& texture_cache,
                 if (null_image_view != VK_NULL_HANDLE) vk_image_view = null_image_view;
             }
             Sampler& sampler{texture_cache.GetSampler(sampler_id)};
+            ASSERT(!image_view.IsTiledLinear() || desc.type == Shader::TextureType::ColorArray2D);
+            rescaling.PushTiledTexture(image_view.IsTiledLinear(), sampler.WrapV());
             guest_descriptor_queue.AddSampledImage(vk_image_view,
                                                    sampler.HandleFor(image_view, desc.is_depth));
             const bool element_rescaled{texture_cache.IsRescaling(image_view)};

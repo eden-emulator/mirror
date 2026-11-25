@@ -40,6 +40,12 @@ constexpr u32 RESCALING_LAYOUT_DOWN_FACTOR_OFFSET = offsetof(RescalingLayout, do
 constexpr u32 RENDERAREA_LAYOUT_OFFSET = sizeof(RescalingLayout);
 constexpr u32 STORAGE_BUFFER_TABLE_OFFSET = RENDERAREA_LAYOUT_OFFSET + sizeof(RenderAreaLayout);
 
+// One tiling bit and three sampler address-mode bits per sampled texture element.
+constexpr u32 NUM_TEXTURE_TILING_WORDS = 4 * NUM_TEXTURE_SCALING_WORDS;
+constexpr u32 TEXTURE_TILING_OFFSET = STORAGE_BUFFER_TABLE_OFFSET + sizeof(u64);
+constexpr u32 TEXTURE_TILING_END = TEXTURE_TILING_OFFSET + NUM_TEXTURE_TILING_WORDS * sizeof(u32);
+static_assert(TEXTURE_TILING_END <= 128);
+
 [[nodiscard]] std::vector<u32> EmitSPIRV(const Profile& profile, const RuntimeInfo& runtime_info, IR::Program& program, Bindings& bindings);
 [[nodiscard]] inline std::vector<u32> EmitSPIRV(const Profile& profile, IR::Program& program) {
     Bindings binding;

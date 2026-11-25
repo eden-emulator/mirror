@@ -44,6 +44,7 @@ struct TextureDefinition {
     u32 count;
     bool is_multisample;
     bool is_integer;
+    u32 tiling_index{};
 };
 
 struct TextureBufferDefinition {
@@ -314,6 +315,7 @@ public:
 
     Id rescaling_uniform_constant{};
     Id rescaling_push_constants{};
+    u32 texture_tiling_member_index{};
     Id rescaling_textures_type{};
     Id rescaling_images_type{};
     u32 rescaling_textures_member_index{};

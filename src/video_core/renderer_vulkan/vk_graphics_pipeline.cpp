@@ -662,6 +662,7 @@ bool GraphicsPipeline::ConfigureDraw(const RescalingPushConstant& rescaling,
     scheduler.Record([this, descriptor_data, bind_pipeline, update_descriptors,
                       storage_buffer_table, descriptor_buffer_offset, descriptor_buffer_chunk,
                       bind_descriptor_buffer, rescaling_data = rescaling.Data(), is_rescaling,
+                      tiling_data = rescaling.TilingData(),
                       update_rescaling, uses_render_area = render_area.uses_render_area,
                       render_area_data = render_area.words](vk::CommandBuffer cmdbuf) {
         if (bind_descriptor_buffer) {
@@ -678,6 +679,9 @@ bool GraphicsPipeline::ConfigureDraw(const RescalingPushConstant& rescaling,
         cmdbuf.PushConstants(*pipeline_layout, VK_SHADER_STAGE_ALL_GRAPHICS,
                              RESCALING_LAYOUT_WORDS_OFFSET, sizeof(rescaling_data),
                              rescaling_data.data());
+        cmdbuf.PushConstants(*pipeline_layout, VK_SHADER_STAGE_ALL_GRAPHICS,
+                             Shader::Backend::SPIRV::TEXTURE_TILING_OFFSET, sizeof(tiling_data),
+                             tiling_data.data());
         cmdbuf.PushConstants(*pipeline_layout, VK_SHADER_STAGE_ALL_GRAPHICS,
                              Shader::Backend::SPIRV::STORAGE_BUFFER_TABLE_OFFSET,
                              sizeof(storage_buffer_table), &storage_buffer_table);

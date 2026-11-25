@@ -501,6 +501,10 @@ EmitContext::EmitContext(const Profile& profile_, const RuntimeInfo& runtime_inf
     DefineTextureBuffers(program.info, texture_binding);
     DefineImageBuffers(program.info, image_binding);
     DefineTextures(program.info, texture_binding, bindings.texture_scaling_index);
+    for (auto& texture : textures) {
+        texture.tiling_index = bindings.texture_tiling_index;
+        bindings.texture_tiling_index += texture.count;
+    }
     DefineImages(program.info, image_binding, bindings.image_scaling_index);
     DefineAttributeMemAccess(program.info);
     DefineWriteStorageCasLoopFunction(program.info);
@@ -1135,8 +1139,15 @@ void EmitContext::DefineGlobalMemoryFunctions(const Info& info) {
 }
 
 void EmitContext::DefineRescalingInput(const Info& info) {
+    const bool uses_tiling = profile.unified_descriptor_binding &&
+        std::ranges::any_of(info.texture_descriptors, [](const auto& desc) {
+            return desc.type == TextureType::ColorArray2D && !desc.is_multisample && !desc.is_integer;
+        });
+    if (uses_tiling) {
+        AddCapability(spv::Capability::ImageQuery);
+    }
     if (profile.unified_descriptor_binding) {
-        if (info.uses_rescaling_uniform || info.uses_render_area ||
+        if (info.uses_rescaling_uniform || info.uses_render_area || uses_tiling ||
             (profile.support_large_storage_buffers && !info.storage_buffers_descriptors.empty())) {
             DefineRescalingInputPushConstant(info);
         }
@@ -1146,7 +1157,7 @@ void EmitContext::DefineRescalingInput(const Info& info) {
 }
 
 void EmitContext::DefineRescalingInputPushConstant(const Info& info) {
-    boost::container::static_vector<Id, 5> members{};
+    boost::container::static_vector<Id, 6> members{};
     u32 member_index{0};
 
     rescaling_textures_type = TypeArray(U32[1], Const(4u));
@@ -1173,9 +1184,16 @@ void EmitContext::DefineRescalingInputPushConstant(const Info& info) {
         members.push_back(U64);
         storage_buffer_table_member_index = member_index++;
     }
+    const Id tiling_words = TypeArray(U32[1], Const(NUM_TEXTURE_TILING_WORDS));
+    Decorate(tiling_words, spv::Decoration::ArrayStride, 4u);
+    members.push_back(tiling_words);
+    texture_tiling_member_index = member_index++;
     const Id push_constant_struct{TypeStruct(std::span(members.data(), members.size()))};
     Decorate(push_constant_struct, spv::Decoration::Block);
     Name(push_constant_struct, "ResolutionInfo");
+    MemberDecorate(push_constant_struct, texture_tiling_member_index, spv::Decoration::Offset,
+                   TEXTURE_TILING_OFFSET);
+    MemberName(push_constant_struct, texture_tiling_member_index, "texture_tiling");
 
     MemberDecorate(push_constant_struct, rescaling_textures_member_index, spv::Decoration::Offset,
                    static_cast<u32>(offsetof(RescalingLayout, rescaling_textures)));
