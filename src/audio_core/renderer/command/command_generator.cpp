@@ -367,16 +367,37 @@ void CommandGenerator::GenerateBiquadFilterEffectCommand(const s16 buffer_offset
     EffectInfoBase::ParameterState param_state{};
     s8 channel_count = 0;
 
+    // Safety check for buffer_offset to prevent SIGSEGV
+    if (buffer_offset < 0 || buffer_offset >= render_context.mix_buffer_count) {
+        LOG_ERROR(Service_Audio, "Invalid buffer_offset {} for BiquadFilter, mix_buffer_count {}",
+                  buffer_offset, render_context.mix_buffer_count);
+        return;
+    }
+
     if (render_context.behavior->IsEffectInfoVersion2Supported()) {
         const auto* parameter =
             reinterpret_cast<const BiquadFilterInfo::ParameterVersion2*>(effect_info.GetParameter());
+        if (parameter == nullptr) {
+            LOG_ERROR(Service_Audio, "BiquadFilter parameter is nullptr");
+            return;
+        }
         param_state = parameter->state;
         channel_count = parameter->channel_count;
     } else {
         const auto* parameter =
             reinterpret_cast<const BiquadFilterInfo::ParameterVersion1*>(effect_info.GetParameter());
+        if (parameter == nullptr) {
+            LOG_ERROR(Service_Audio, "BiquadFilter parameter is nullptr");
+            return;
+        }
         param_state = parameter->state;
         channel_count = parameter->channel_count;
+    }
+
+    // Safety check for channel_count to prevent buffer overflows
+    if (channel_count < 0 || channel_count > 6) {
+        LOG_ERROR(Service_Audio, "Invalid channel_count {} for BiquadFilter", channel_count);
+        return;
     }
 
     if (channel_count > 0 && param_state <= EffectInfoBase::ParameterState::Updated) {
@@ -399,13 +420,23 @@ void CommandGenerator::GenerateBiquadFilterEffectCommand(const s16 buffer_offset
                 render_context.behavior->UseBiquadFilterFloatProcessing();
 
             for (s8 channel = 0; channel < channel_count; channel++) {
-                command_buffer.GenerateBiquadFilterCommand(node_id, effect_info, buffer_offset, channel,
-                                                           needs_init, use_float_processing);
+                try {
+                    command_buffer.GenerateBiquadFilterCommand(node_id, effect_info, buffer_offset, channel,
+                                                               needs_init, use_float_processing);
+                } catch (...) {
+                    LOG_ERROR(Service_Audio, "Exception in GenerateBiquadFilterCommand for channel {}", channel);
+                    return;
+                }
             }
         } else {
             for (s8 channel = 0; channel < channel_count; channel++) {
-                command_buffer.GenerateCopyMixBufferCommand(node_id, effect_info, buffer_offset,
-                                                            channel);
+                try {
+                    command_buffer.GenerateCopyMixBufferCommand(node_id, effect_info, buffer_offset,
+                                                                channel);
+                } catch (...) {
+                    LOG_ERROR(Service_Audio, "Exception in GenerateCopyMixBufferCommand for channel {}", channel);
+                    return;
+                }
             }
         }
     }
