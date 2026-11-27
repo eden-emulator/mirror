@@ -741,6 +741,16 @@ void BufferCache<P>::PopAsyncBuffers() {
         });
         async_downloads.Subtract(device_addr, copy.size, [&](DAddr start, DAddr end) {
             gpu_modified_ranges.Subtract(start, end - start);
+            // Newer writes without a queued download are not represented by async_downloads.
+            const auto preserve_pending = [&](const auto& ranges) {
+                ranges.ForEachInRange(start, end - start, [&](DAddr newer_start, DAddr newer_end) {
+                    gpu_modified_ranges.Add(newer_start, newer_end - newer_start);
+                });
+            };
+            preserve_pending(uncommitted_gpu_modified_ranges);
+            for (const auto& ranges : committed_gpu_modified_ranges) {
+                preserve_pending(ranges);
+            }
         });
     }
     async_buffers_death_ring.emplace_back(*async_buffer);
